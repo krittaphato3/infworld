@@ -266,6 +266,12 @@
     .api-field input { width: 100%; padding: 10px 12px; font-size: 13px; font-family: "Inter", system-ui, sans-serif; background: #12122a; border: 1px solid #2a2a5e; border-radius: 8px; color: #e0e0ff; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
     .api-field input::placeholder { color: #444466; }
     .api-field input:focus { outline: none; border-color: #e94560; box-shadow: 0 0 0 3px rgba(233,69,96,0.15); }
+    .test-conn-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 14px; font-size: 12px; font-weight: 600; font-family: "Inter", system-ui, sans-serif; color: #8888aa; background: transparent; border: 1px solid #2a2a5e; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.02em; }
+    .test-conn-btn:hover { border-color: #e94560; color: #e94560; box-shadow: 0 0 10px rgba(233,69,96,0.15); }
+    .test-conn-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .test-conn-btn.testing { border-color: #ffaa00; color: #ffaa00; }
+    .test-conn-btn.success { border-color: #00ff88; color: #00ff88; }
+    .test-conn-btn.error { border-color: #ff4444; color: #ff4444; }
     .password-wrapper { position: relative; }
     .password-wrapper input { padding-right: 40px; }
     .password-toggle { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 6px; color: #8888aa; transition: color 0.2s ease; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
@@ -313,6 +319,10 @@
         <div class="api-field"><label for="llm-base-url">Base URL</label><input type="url" id="llm-base-url" placeholder="https://api.openai.com/v1" autocomplete="off" spellcheck="false"></div>
         <div class="api-field"><label for="llm-api-key">API Key</label><div class="password-wrapper"><input type="password" id="llm-api-key" placeholder="" autocomplete="off" spellcheck="false"><button type="button" class="password-toggle" data-target="llm-api-key" aria-label="Show API key"><svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg><svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button></div></div>
         <div class="api-field"><label for="llm-model">Model</label><input type="text" id="llm-model" placeholder="gpt-4o" autocomplete="off" spellcheck="false"></div>
+        <button type="button" class="test-conn-btn" data-api="llm" aria-label="Test LLM connection" onclick="window._testConn('llm',this)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Test Connection
+        </button>
       </div>
       <div class="api-section" data-api="image">
         <div class="api-section-header"><div class="flex items-center gap-2"><span class="api-dot unconfigured" id="image-dot"></span><span class="text-sm font-semibold text-text-primary">Image Generation</span><span class="api-optional-label">Optional</span></div><span class="api-badge not-set" id="image-badge">NOT SET</span></div>
@@ -320,6 +330,10 @@
         <div class="api-field"><label for="image-base-url">Base URL</label><input type="url" id="image-base-url" placeholder="https://api.openai.com/v1" autocomplete="off" spellcheck="false"></div>
         <div class="api-field"><label for="image-api-key">API Key</label><div class="password-wrapper"><input type="password" id="image-api-key" placeholder="" autocomplete="off" spellcheck="false"><button type="button" class="password-toggle" data-target="image-api-key" aria-label="Show API key"><svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg><svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button></div></div>
         <div class="api-field"><label for="image-model">Model</label><input type="text" id="image-model" placeholder="dall-e-3" autocomplete="off" spellcheck="false"></div>
+        <button type="button" class="test-conn-btn" data-api="image" aria-label="Test Image API connection" onclick="window._testConn('image',this)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Test Connection
+        </button>
       </div>
       <div class="api-section" data-api="audio">
         <div class="api-section-header"><div class="flex items-center gap-2"><span class="api-dot unconfigured" id="audio-dot"></span><span class="text-sm font-semibold text-text-primary">Audio Generation (TTS / SFX)</span><span class="api-optional-label">Optional</span></div><span class="api-badge not-set" id="audio-badge">NOT SET</span></div>
@@ -327,6 +341,10 @@
         <div class="api-field"><label for="audio-base-url">Base URL</label><input type="url" id="audio-base-url" placeholder="https://api.openai.com/v1" autocomplete="off" spellcheck="false"></div>
         <div class="api-field"><label for="audio-api-key">API Key</label><div class="password-wrapper"><input type="password" id="audio-api-key" placeholder="" autocomplete="off" spellcheck="false"><button type="button" class="password-toggle" data-target="audio-api-key" aria-label="Show API key"><svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg><svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button></div></div>
         <div class="api-field"><label for="audio-model">Model</label><input type="text" id="audio-model" placeholder="tts-1" autocomplete="off" spellcheck="false"></div>
+        <button type="button" class="test-conn-btn" data-api="audio" aria-label="Test Audio API connection" onclick="window._testConn('audio',this)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Test Connection
+        </button>
       </div>
     </div>
     <div class="settings-footer">
@@ -496,6 +514,43 @@
     </div>
   </main>
   <script>
+    window._testConn = async function(apiType, btn) {
+      btn.disabled = true;
+      var origHTML = btn.innerHTML;
+      btn.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span> Testing...';
+      btn.style.borderColor = '#ffaa00';
+      btn.style.color = '#ffaa00';
+      try {
+        var resp = await fetch("/api/test-connection?api_type=" + encodeURIComponent(apiType), { method: "POST" });
+        var data = await resp.json();
+        if (data.status === "ok" || data.status === "skip") {
+          btn.style.borderColor = '#00ff88';
+          btn.style.color = '#00ff88';
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ' + (data.status === "skip" ? "Skipped" : "Connected");
+          var toast = document.createElement("div");
+          toast.className = "toast toast-success";
+          toast.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg><span>' + data.message + '</span>';
+          document.getElementById("toastContainer").appendChild(toast);
+          setTimeout(function(){ toast.classList.add("removing"); setTimeout(function(){ toast.remove(); }, 300); }, 4000);
+        } else {
+          btn.style.borderColor = '#ff4444';
+          btn.style.color = '#ff4444';
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Failed';
+          var toast2 = document.createElement("div");
+          toast2.className = "toast toast-error";
+          toast2.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg><span>' + data.message + '</span>';
+          document.getElementById("toastContainer").appendChild(toast2);
+          setTimeout(function(){ toast2.classList.add("removing"); setTimeout(function(){ toast2.remove(); }, 300); }, 4000);
+        }
+      } catch (e) {
+        btn.style.borderColor = '#ff4444';
+        btn.style.color = '#ff4444';
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Failed';
+      } finally {
+        btn.disabled = false;
+        setTimeout(function() { btn.style.borderColor = ''; btn.style.color = ''; btn.innerHTML = origHTML; }, 3000);
+      }
+    };
     (function() {
       "use strict";
       var API_BASE = "";

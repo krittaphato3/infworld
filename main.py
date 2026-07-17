@@ -136,6 +136,59 @@ async def update_config(update: ConfigUpdate) -> ConfigResponse:
     return await get_config()
 
 
+@app.post("/api/test-connection")
+async def test_connection(api_type: str):
+    """Test an API connection by sending a minimal request.
+
+    api_type: "llm", "image", or "audio"
+    """
+    import httpx
+
+    if api_type not in ("llm", "image", "audio"):
+        raise HTTPException(status_code=400, detail="api_type must be 'llm', 'image', or 'audio'")
+
+    try:
+        if api_type == "llm":
+            from client import llm_client
+            resp = await llm_client.chat(
+                messages=[{"role": "user", "content": "Reply with only the word OK"}],
+                max_tokens=10,
+                temperature=0,
+            )
+            return {"status": "ok", "message": f"Connected. Model responded: {resp[:50] or '(empty)'}"}
+
+        elif api_type == "image":
+            if not settings.image_api_key or settings.image_api_key.startswith("sk-your"):
+                return {"status": "skip", "message": "Image API key not configured — will use placeholders"}
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(
+                    f"{settings.image_api_url}/models",
+                    headers={"Authorization": f"Bearer {settings.image_api_key}"},
+                )
+                if resp.status_code == 200:
+                    return {"status": "ok", "message": "Image API connection successful"}
+                return {"status": "error", "message": f"Image API returned {resp.status_code}"}
+
+        elif api_type == "audio":
+            if not settings.audio_api_key or settings.audio_api_key.startswith("sk-your"):
+                return {"status": "skip", "message": "Audio API key not configured — will use placeholders"}
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(
+                    f"{settings.audio_api_url}/models",
+                    headers={"Authorization": f"Bearer {settings.audio_api_key}"},
+                )
+                if resp.status_code == 200:
+                    return {"status": "ok", "message": "Audio API connection successful"}
+                return {"status": "error", "message": f"Audio API returned {resp.status_code}"}
+
+    except httpx.ConnectError:
+        return {"status": "error", "message": f"Could not connect to {api_type} API server"}
+    except httpx.TimeoutException:
+        return {"status": "error", "message": f"{api_type} API connection timed out"}
+    except Exception as exc:
+        return {"status": "error", "message": f"{api_type} API test failed: {str(exc)[:100]}"}
+
+
 @app.get("/play/{game_id}", response_class=HTMLResponse)
 async def play_game(game_id: str) -> HTMLResponse:
     """Serve the generated game HTML."""

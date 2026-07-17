@@ -58,8 +58,14 @@ class EngineerAgent(BaseAgent):
             {"role": "user", "content": "Generate the complete game code now."},
         ]
 
-        raw_js = await llm_client.chat(messages, temperature=0.5)
+        raw_js = await llm_client.chat(messages, temperature=0.5, max_tokens=16384)
         clean_js = self._strip_code_fences(raw_js)
+
+        # If output looks truncated (no closing brace at top level), retry once
+        if clean_js and not self._is_complete(clean_js):
+            self.log("Output appears truncated, retrying with higher token limit...")
+            raw_js = await llm_client.chat(messages, temperature=0.3, max_tokens=16384)
+            clean_js = self._strip_code_fences(raw_js)
 
         state.game_js = clean_js
         self.log(f"Game JS generated ({len(clean_js)} chars)")
@@ -82,8 +88,35 @@ class EngineerAgent(BaseAgent):
         """Remove accidental markdown code fences from LLM output."""
         import re
 
+        text = text.strip()
+        # Try full match: opening fence + content + closing fence
         pattern = r"^```(?:javascript|js)?\s*\n?(.*?)\n?\s*```$"
-        match = re.match(pattern, text.strip(), re.DOTALL)
+        match = re.match(pattern, text, re.DOTALL)
         if match:
             return match.group(1).strip()
-        return text.strip()
+        # Try partial match: opening fence but no closing (truncated output)
+        pattern2 = r"^```(?:javascript|js)?\s*\n?(.*)"
+        match2 = re.match(pattern2, text, re.DOTALL)
+        if match2:
+            return match2.group(1).strip()
+        return text
+
+    @staticmethod
+    def _is_complete(js_code: str) -> bool:
+        """Heuristic: check if the JS has balanced braces at the top level."""
+        depth = 0
+        in_string = False
+        string_char = None
+        for ch in js_code:
+            if in_string:
+                if ch == string_char:
+                    in_string = False
+                continue
+            if ch in ('"', "'", '`'):
+                in_string = True
+                string_char = ch
+            elif ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+        return depth <= 0

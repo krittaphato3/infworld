@@ -58,7 +58,8 @@ class AssemblerAgent(BaseAgent):
         title = state.gdd.title if state.gdd else "Infinite Realms Game"
 
         safe_title = html_mod.escape(title)
-        safe_js = state.game_js.replace("</script>", "<\\/script>")
+        clean_js = self._strip_code_fences(state.game_js)
+        safe_js = clean_js.replace("</script>", "<\\/script>")
         html = _HTML_TEMPLATE.format(title=safe_title, game_js=safe_js)
 
         game_dir = os.path.join(settings.generated_dir, state.game_id)
@@ -72,3 +73,13 @@ class AssemblerAgent(BaseAgent):
         state.status = "completed"
         self.log(f"HTML written to {html_path}")
         return state
+
+    @staticmethod
+    def _strip_code_fences(text: str) -> str:
+        """Remove markdown code fences from LLM output as a safety net."""
+        import re
+        pattern = r"^```(?:javascript|js)?\s*\n?(.*?)\n?\s*```$"
+        match = re.match(pattern, text.strip(), re.DOTALL)
+        if match:
+            return match.group(1).strip()
+        return text.strip()
