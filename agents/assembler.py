@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html as html_mod
 import os
+import re
 from pathlib import Path
 
 from agents.base import BaseAgent
@@ -60,6 +61,8 @@ class AssemblerAgent(BaseAgent):
         safe_title = html_mod.escape(title)
         clean_js = self._strip_code_fences(state.game_js)
         safe_js = clean_js.replace("</script>", "<\\/script>")
+        # Fix Phaser parent to match our container ID
+        safe_js = re.sub(r"parent:\s*['\"](?!game-container)[^'\"]*['\"]", "parent: 'game-container'", safe_js)
         html = _HTML_TEMPLATE.format(title=safe_title, game_js=safe_js)
 
         game_dir = os.path.join(settings.generated_dir, state.game_id)

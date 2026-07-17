@@ -450,8 +450,8 @@
             </div>
           </div>
           <div class="mt-6 pt-5 border-t border-border flex items-center justify-between">
-            <span class="text-xs text-text-secondary">Estimated time remaining</span>
-            <span class="text-sm font-mono text-accent font-semibold" id="eta-display">~60s</span>
+            <span class="text-xs text-text-secondary">Elapsed time</span>
+            <span class="text-sm font-mono text-accent font-semibold" id="eta-display">0:00</span>
           </div>
         </div>
         <div class="h-8 sm:h-12" aria-hidden="true"></div>
@@ -565,7 +565,7 @@
         copyLabel: $("copy-label"), copyIcon: $("copy-icon"), fullBtn: $("fullscreen-btn"),
         newBtn: $("new-game-btn"), toastBox: $("toastContainer"), particles: $("particleField"),
       };
-      var currentGameId = null, phaseTimer = null, currentStep = 0, etaSeconds = 60;
+      var currentGameId = null, elapsedTimer = null, elapsedSeconds = 0, currentStep = 0;
 
       var placeholders = [
         'A 1920s noir detective game where you play as a sentient cat...',
@@ -623,10 +623,10 @@
       }
 
       var stepData=[
-        {id:0,title:"Director Agent",desc:"Drafting game design document...",eta:60},
-        {id:1,title:"Asset Agent",desc:"Generating images and audio...",eta:45},
-        {id:2,title:"Engineer Agent",desc:"Writing Phaser.js game code...",eta:30},
-        {id:3,title:"Assembler Agent",desc:"Bundling the final game...",eta:10},
+        {id:0,title:"Director Agent",desc:"Drafting game design document..."},
+        {id:1,title:"Asset Agent",desc:"Generating images and audio..."},
+        {id:2,title:"Engineer Agent",desc:"Writing Phaser.js game code..."},
+        {id:3,title:"Assembler Agent",desc:"Bundling the final game..."},
       ];
 
       var checkSvgSmall = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#0a0a1a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
@@ -655,10 +655,11 @@
           title.classList.remove("text-text-secondary");title.classList.add("text-accent");
           for(var j2=idx+1;j2<=3;j2++){var t=$("step-title-"+j2);t.classList.remove("text-success","text-accent");t.classList.add("text-text-secondary");}
         }
-        etaSeconds=stepData[idx].eta;els.eta.textContent="~"+etaSeconds+"s";
+        els.eta.textContent="0:00";
       }
 
       function completeAllSteps(){
+        stopElapsedTimer();
         for(var i=0;i<=3;i++){
           var dot=$("dot-"+i),inner=$("dot-inner-"+i),line=$("line-"+i),title=$("step-title-"+i);
           dot.classList.remove("active");dot.classList.add("complete");
@@ -669,7 +670,7 @@
           if(line)line.style.height="100%";
           title.classList.remove("text-text-secondary","text-accent");title.classList.add("text-success");
         }
-        els.eta.textContent="Done!";els.subtitle.textContent="Game generated successfully!";
+        els.subtitle.textContent="Game generated successfully!";
       }
 
       function resetStepper(){
@@ -689,20 +690,25 @@
         els.subtitle.textContent="Your game is being crafted by our AI agents...";
       }
 
-      function startPhaseTimer(){
-        activateStep(0);etaSeconds=60;els.eta.textContent="~"+etaSeconds+"s";
-        phaseTimer=setInterval(function(){etaSeconds=Math.max(0,etaSeconds-5);els.eta.textContent=etaSeconds>0?"~"+etaSeconds+"s":"Almost done...";},3000);
-        var stepTimers=[8000,16000,24000,30000];
-        stepTimers.forEach(function(delay,i){setTimeout(function(){if(sections.loading.classList.contains("active")){activateStep(i);}},delay);});
+      function startElapsedTimer(){
+        elapsedSeconds=0;
+        updateElapsedDisplay();
+        elapsedTimer=setInterval(function(){elapsedSeconds++;updateElapsedDisplay();},1000);
       }
 
-      function stopPhaseTimer(){if(phaseTimer){clearInterval(phaseTimer);phaseTimer=null;}}
+      function stopElapsedTimer(){if(elapsedTimer){clearInterval(elapsedTimer);elapsedTimer=null;}}
+
+      function updateElapsedDisplay(){
+        var mins=Math.floor(elapsedSeconds/60);
+        var secs=elapsedSeconds%60;
+        els.eta.textContent=mins+":"+(secs<10?"0":"")+secs;
+      }
 
       async function generateGame(){
         hideError();
         var prompt=els.prompt.value.trim();
         if(!prompt){showError("Please enter a game idea before generating.");els.prompt.focus();return;}
-        els.genBtn.disabled=true;showView("loading");startPhaseTimer();resetStepper();
+        els.genBtn.disabled=true;showView("loading");resetStepper();startElapsedTimer();activateStep(0);
         try{
           var resp=await fetch(API_BASE+"/api/generate-game",{
             method:"POST",headers:{"Content-Type":"application/json"},
@@ -711,11 +717,11 @@
           if(!resp.ok){var err=await resp.json().catch(function(){return{detail:"Unknown error"};});throw new Error(err.detail||"Server error "+resp.status);}
           var data=await resp.json();currentGameId=data.game_id;
           completeAllSteps();
-          await new Promise(function(r){setTimeout(r,600);});stopPhaseTimer();
+          await new Promise(function(r){setTimeout(r,600);});stopElapsedTimer();
           els.iframe.src=API_BASE+"/play/"+data.game_id;
           els.shareUrl.textContent=window.location.origin+"/play/"+data.game_id;
           showView("result");showToast("Your game is ready! Have fun!","success");
-        }catch(e){stopPhaseTimer();showView("landing");showError(e.message||"Generation failed. Please try again.");showToast("Generation failed. Please try again.","error");}
+        }catch(e){stopElapsedTimer();showView("landing");showError(e.message||"Generation failed. Please try again.");showToast("Generation failed. Please try again.","error");}
         finally{els.genBtn.disabled=false;}
       }
 

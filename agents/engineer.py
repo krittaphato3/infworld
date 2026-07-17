@@ -16,10 +16,44 @@ CRITICAL RULES:
 - Use the variable name `config` for the Phaser.Game configuration object.
 - All assets must use the EXACT URLs provided below.
 - The game must be immediately playable when loaded.
-- Include proper preload(), create(), and update() methods.
 - Handle all win/loss conditions from the GDD.
 - The game canvas size must be {canvas_width}x{canvas_height}.
 - The background color must be {background_color}.
+- parent: 'game-container' in the Phaser config.
+
+CODE STRUCTURE (MUST FOLLOW EXACTLY):
+1. Define ALL functions first (preload, create, update, helper functions)
+2. Define the `config` object AFTER all functions are defined
+3. Create the game instance LAST: `var game = new Phaser.Game(config);`
+4. NEVER use ES6 class syntax. Use plain functions and function-based scenes.
+5. For multiple scenes, use: `var config = {{ scene: [BootScene, MainScene] }};`
+   where BootScene and MainScene are objects with preload/create/update properties defined ABOVE the config.
+6. ALL variables (player, score, cursors, etc.) must be declared with `var` at the top, before any function uses them.
+
+WRONG (will crash):
+```
+var config = {{ scene: [GameScene] }};  // GameScene not defined yet!
+class GameScene extends Phaser.Scene {{ ... }}  // too late
+new Phaser.Game(config);
+```
+
+CORRECT:
+```
+var config;  // declared at top
+function preload() {{ ... }}
+function create() {{ ... }}
+function update() {{ ... }}
+config = {{
+    type: Phaser.AUTO,
+    width: {canvas_width},
+    height: {canvas_height},
+    backgroundColor: '{background_color}',
+    parent: 'game-container',
+    physics: {{ default: 'arcade', arcade: {{ gravity: {{ y: 800 }}, debug: false }} }},
+    scene: {{ preload: preload, create: create, update: update }}
+}};
+var game = new Phaser.Game(config);
+```
 
 ASSET URLS:
 {asset_list}
