@@ -1,0 +1,25 @@
+# Environment
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Generated games
+generated/*
+!generated/.gitkeep
+
+# Stray / temp files
+build_*.js
+build_*.py
+gen*.js
+
+# IDE
+.vscode/
+.idea/
+*.swp
