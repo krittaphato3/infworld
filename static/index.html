@@ -721,12 +721,7 @@
 
       
       /* ===== SETTINGS PANEL LOGIC ===== */
-      var settingsPanel = document.getElementById("settings-panel");
-      var settingsOverlay = document.getElementById("settings-overlay");
-      var settingsCloseBtn = document.getElementById("settings-close-btn");
-      var settingsGearBtn = document.getElementById("settings-gear-btn");
-      var settingsSaveBtn = document.getElementById("settings-save-btn");
-      var settingsBadge = document.getElementById("settings-badge");
+      var settingsPanel, settingsOverlay, settingsCloseBtn, settingsGearBtn, settingsSaveBtn, settingsBadge;
       var settingsPanelOpen = false;
       var previouslyFocusedElement = null;
 
@@ -894,7 +889,15 @@
 
       /* ===== END SETTINGS PANEL LOGIC ===== */
 
-function init(){showView("landing");initParticles();bindEvents();cyclePlaceholder();updateCharCount();}
+function init(){
+        settingsPanel = document.getElementById("settings-panel");
+        settingsOverlay = document.getElementById("settings-overlay");
+        settingsCloseBtn = document.getElementById("settings-close-btn");
+        settingsGearBtn = document.getElementById("settings-gear-btn");
+        settingsSaveBtn = document.getElementById("settings-save-btn");
+        settingsBadge = document.getElementById("settings-badge");
+        showView("landing");initParticles();bindEvents();cyclePlaceholder();updateCharCount();
+      }
       if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}
     })();
   </script>
