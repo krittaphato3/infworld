@@ -14,6 +14,7 @@ from models import (
     APIStatus,
     ConfigResponse,
     ConfigUpdate,
+    EditGameRequest,
     GamePrompt,
     GenerateResponse,
     GameStatusResponse,
@@ -134,6 +135,29 @@ async def update_config(update: ConfigUpdate) -> ConfigResponse:
     updates = update.model_dump(exclude_none=True)
     update_settings(updates)
     return await get_config()
+
+
+@app.post("/api/edit-game", response_model=GenerateResponse)
+async def edit_game_endpoint(request: EditGameRequest):
+    """Edit an existing game with new instructions."""
+    from pipeline import edit_game
+
+    try:
+        state = await edit_game(request.game_id, request.edit_prompt)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        print(f"[API] Game edit failed: {exc}")
+        raise HTTPException(status_code=500, detail="Game edit failed. Please try again.")
+
+    if state.status == "failed":
+        raise HTTPException(status_code=500, detail=state.error)
+
+    return GenerateResponse(
+        game_id=state.game_id,
+        status=state.status,
+        message="Game updated successfully!",
+    )
 
 
 @app.post("/api/test-connection")

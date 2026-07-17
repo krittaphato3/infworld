@@ -146,6 +146,8 @@ Use for: jump sounds (440Hz, 0.1s), collect sounds (880Hz, 0.15s), death sounds 
 ## GAME DESIGN DOCUMENT
 {gdd_json}
 
+{edit_section}
+
 Output only the JavaScript code, nothing else."""
 
 
@@ -164,12 +166,30 @@ class EngineerAgent(BaseAgent):
         asset_list = self._format_asset_list(state)
         gdd_json = state.gdd.model_dump_json(indent=2)
 
+        # Build edit section for iterative editing
+        edit_section = ""
+        if "EDIT INSTRUCTIONS:" in state.prompt:
+            edit_section = f"""
+## EXISTING GAME CODE (modify this, don't rewrite from scratch)
+The current game code is below. Apply the edit instructions while keeping everything else working:
+
+```javascript
+{state.game_js}
+```
+
+## EDIT INSTRUCTIONS
+{state.prompt.split("EDIT INSTRUCTIONS:")[-1].strip()}
+
+IMPORTANT: Output the COMPLETE modified game code, not just the changes. The entire game must work as a single file.
+"""
+
         system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(
             canvas_width=state.gdd.canvas_width,
             canvas_height=state.gdd.canvas_height,
             background_color=state.gdd.background_color,
             asset_list=asset_list,
             gdd_json=gdd_json,
+            edit_section=edit_section,
         )
 
         messages = [

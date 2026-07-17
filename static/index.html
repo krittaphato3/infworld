@@ -508,6 +508,25 @@
             <span id="copy-label">Copy</span>
           </button>
         </div>
+        <div class="mt-4 bg-surface rounded-xl border border-border p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <p class="text-sm font-semibold text-text-primary">Edit Game</p>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="edit-prompt-input" placeholder="e.g. Add double jump, make player bigger, add more enemies..." 
+              class="flex-1 px-3 py-2 rounded-lg bg-card border border-border text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:border-accent transition-colors"
+              maxlength="2000" aria-label="Edit instructions">
+            <button id="edit-btn" type="button"
+              class="gradient-btn text-white font-medium py-2 px-4 rounded-lg text-sm flex items-center gap-1.5 flex-shrink-0"
+              aria-label="Apply edit to game">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline></svg>
+              Apply
+            </button>
+          </div>
+          <p class="text-xs text-text-secondary mt-2">Describe what you want to change. The AI will modify the game code.</p>
+          <div id="edit-error-msg" class="hidden mt-3 p-2 rounded-lg bg-error/10 border border-error/30 text-error text-xs" role="alert"></div>
+        </div>
         <div class="h-8 sm:h-12" aria-hidden="true"></div>
       </section>
 
@@ -740,6 +759,66 @@
         }).catch(function(){showToast("Failed to copy link.","error");});
       }
 
+      async function editGame() {
+        var editInput = document.getElementById("edit-prompt-input");
+        var editBtn = document.getElementById("edit-btn");
+        var editError = document.getElementById("edit-error-msg");
+        var prompt = editInput.value.trim();
+        
+        if (!prompt) {
+          editError.textContent = "Please enter edit instructions.";
+          editError.classList.remove("hidden");
+          return;
+        }
+        if (!currentGameId) {
+          editError.textContent = "No game to edit.";
+          editError.classList.remove("hidden");
+          return;
+        }
+        
+        editError.classList.add("hidden");
+        editBtn.disabled = true;
+        editBtn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;"></span> Editing...';
+        
+        // Show loading state
+        showView("loading");
+        resetStepper();
+        activateStep(0);
+        startElapsedTimer();
+        setTimeout(function() { if (sections.loading.classList.contains("active")) activateStep(2); }, 5000);
+        
+        try {
+          var resp = await fetch(API_BASE + "/api/edit-game", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ game_id: currentGameId, edit_prompt: prompt }),
+          });
+          if (!resp.ok) {
+            var err = await resp.json().catch(function() { return { detail: "Unknown error" }; });
+            throw new Error(err.detail || "Server error " + resp.status);
+          }
+          var data = await resp.json();
+          completeAllSteps();
+          await new Promise(function(r) { setTimeout(r, 600); });
+          stopElapsedTimer();
+          
+          // Reload the iframe with cache bust
+          els.iframe.src = API_BASE + "/play/" + data.game_id + "?t=" + Date.now();
+          showView("result");
+          showToast("Game updated!", "success");
+          editInput.value = "";
+        } catch (e) {
+          stopElapsedTimer();
+          showView("result");
+          editError.textContent = e.message || "Edit failed. Please try again.";
+          editError.classList.remove("hidden");
+          showToast("Edit failed: " + (e.message || "Unknown error"), "error");
+        } finally {
+          editBtn.disabled = false;
+          editBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline></svg> Apply';
+        }
+      }
+
       function initParticles(){
         var container=els.particles,count=window.innerWidth<640?25:50;
         for(var i=0;i<count;i++){
@@ -777,6 +856,20 @@
           if (e.key === "Escape" && settingsPanelOpen) { closeSettings(); }
           trapFocus(e);
         });
+
+        var editBtn = document.getElementById("edit-btn");
+        var editInput = document.getElementById("edit-prompt-input");
+        if (editBtn) {
+          editBtn.addEventListener("click", editGame);
+        }
+        if (editInput) {
+          editInput.addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              editGame();
+            }
+          });
+        }
 
       }
 

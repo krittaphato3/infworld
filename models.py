@@ -99,3 +99,9 @@ class ConfigUpdate(BaseModel):
     audio_api_url: str | None = None
     audio_api_key: str | None = None
     audio_model: str | None = None
+
+
+class EditGameRequest(BaseModel):
+    """Request to edit an existing game."""
+    game_id: str = Field(..., min_length=1, description="ID of the game to edit")
+    edit_prompt: str = Field(..., min_length=1, max_length=2000, description="Edit instructions")
