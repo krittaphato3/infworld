@@ -54,31 +54,19 @@ class AssetAgent(BaseAgent):
 
     @staticmethod
     def _placeholder_image(name: str) -> str:
-        """Return a data URI SVG placeholder for missing images."""
-        import base64
-
-        colors = ["#e94560", "#0f3460", "#00ff88", "#ff6b81", "#8888aa"]
-        color = colors[hash(name) % len(colors)]
-        svg = (
-            f'<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">'
-            f'<rect width="128" height="128" fill="{color}"/>'
-            f'<text x="64" y="64" text-anchor="middle" dominant-baseline="middle" '
-            f'fill="white" font-size="10" font-family="monospace">{name}</text>'
-            f'</svg>'
-        )
-        return f"data:image/svg+xml;base64,{base64.b64encode(svg.encode()).decode()}"
+        """Return a marker telling the engineer to draw this texture in code."""
+        return f"PLACEHOLDER:code-drawn:{name}"
 
     async def _generate_audio(self, asset: AssetRequirement) -> str:
-        """Attempt to generate audio via the configured API; fall back to a placeholder."""
+        """Attempt to generate audio via the configured API; fall back to a code-sound marker."""
         if settings.audio_api_key and not settings.audio_api_key.startswith("sk-your"):
             try:
                 return await self._call_audio_api(asset)
             except Exception as exc:
-                self.log(f"Audio API call failed, using placeholder: {exc}")
+                self.log(f"Audio API call failed, using code-sound: {exc}")
 
-        placeholder = _PLACEHOLDER_AUDIO_URLS.get(asset.type, _PLACEHOLDER_AUDIO_URLS["audio_sfx"])
-        self.log(f"Using placeholder audio for {asset.name}")
-        return placeholder
+        self.log(f"Audio API not configured, using code-sound for {asset.name}")
+        return f"PLACEHOLDER:code-sound:{asset.name}"
 
     async def _call_audio_api(self, asset: AssetRequirement) -> str:
         """POST to the audio generation endpoint and return the audio URL or base64."""

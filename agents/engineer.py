@@ -8,57 +8,142 @@ from models import GameState
 
 
 _SYSTEM_PROMPT_TEMPLATE = """\
-You are an expert Phaser.js game developer. Generate a COMPLETE, working Phaser 3 game as a single JavaScript file.
+You are an expert Phaser 3 game developer. Generate a COMPLETE, working Phaser 3 game.
 
-CRITICAL RULES:
-- Output ONLY raw JavaScript code. No markdown, no code fences, no explanations.
-- The code will be injected into an HTML file that already loads Phaser from CDN.
-- Use the variable name `config` for the Phaser.Game configuration object.
-- All assets must use the EXACT URLs provided below.
-- The game must be immediately playable when loaded.
-- Handle all win/loss conditions from the GDD.
-- The game canvas size must be {canvas_width}x{canvas_height}.
-- The background color must be {background_color}.
-- parent: 'game-container' in the Phaser config.
+## OUTPUT RULES
+- Output ONLY raw JavaScript. No markdown, no code fences, no explanations.
+- The code will be injected into HTML that already loads Phaser 3.80 from CDN.
+- The game must be immediately playable with zero errors.
 
-CODE STRUCTURE (MUST FOLLOW EXACTLY):
-1. Define ALL functions first (preload, create, update, helper functions)
-2. Define the `config` object AFTER all functions are defined
-3. Create the game instance LAST: `var game = new Phaser.Game(config);`
-4. NEVER use ES6 class syntax. Use plain functions and function-based scenes.
-5. For multiple scenes, use: `var config = {{ scene: [BootScene, MainScene] }};`
-   where BootScene and MainScene are objects with preload/create/update properties defined ABOVE the config.
-6. ALL variables (player, score, cursors, etc.) must be declared with `var` at the top, before any function uses them.
-
-WRONG (will crash):
+## CODE STRUCTURE (MUST FOLLOW)
 ```
-var config = {{ scene: [GameScene] }};  // GameScene not defined yet!
-class GameScene extends Phaser.Scene {{ ... }}  // too late
-new Phaser.Game(config);
-```
+// 1. Variable declarations at top
+var player, platforms, score, scoreText, cursors, gameOver;
 
-CORRECT:
-```
-var config;  // declared at top
-function preload() {{ ... }}
-function create() {{ ... }}
-function update() {{ ... }}
-config = {{
+// 2. Function definitions
+function preload() {{ /* create textures here */ }}
+function create() {{ /* setup game objects */ }}
+function update() {{ /* game loop */ }}
+
+// 3. Config object (AFTER all functions)
+var config = {{
     type: Phaser.AUTO,
     width: {canvas_width},
     height: {canvas_height},
     backgroundColor: '{background_color}',
     parent: 'game-container',
-    physics: {{ default: 'arcade', arcade: {{ gravity: {{ y: 800 }}, debug: false }} }},
+    physics: {{
+        default: 'arcade',
+        arcade: {{ gravity: {{ y: 800 }}, debug: false }}
+    }},
     scene: {{ preload: preload, create: create, update: update }}
 }};
+
+// 4. Game instance (LAST line)
 var game = new Phaser.Game(config);
 ```
 
-ASSET URLS:
+## SELF-SUFFICIENT GRAPHICS (CRITICAL)
+When assets show "[placeholder]" or "CREATE IN CODE", you MUST create all graphics in code using Phaser's graphics API.
+NEVER use this.load.image() for placeholder assets. Instead, in preload():
+
+```javascript
+function preload() {{
+    // Create player texture (colored rectangle with eyes)
+    var g = this.make.graphics({{ add: false }});
+    g.fillStyle(0x00aaff, 1);
+    g.fillRect(0, 0, 32, 48);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(10, 12, 4);
+    g.fillCircle(22, 12, 4);
+    g.fillStyle(0x000000, 1);
+    g.fillCircle(10, 12, 2);
+    g.fillCircle(22, 12, 2);
+    g.generateTexture('player', 32, 48);
+    g.destroy();
+
+    // Create platform texture
+    var g2 = this.make.graphics({{ add: false }});
+    g2.fillStyle(0x44aa44, 1);
+    g2.fillRect(0, 0, 200, 32);
+    g2.fillStyle(0x66cc66, 1);
+    g2.fillRect(0, 0, 200, 8);
+    g2.generateTexture('platform', 200, 32);
+    g2.destroy();
+
+    // Create coin texture
+    var g3 = this.make.graphics({{ add: false }});
+    g3.fillStyle(0xffdd00, 1);
+    g3.fillCircle(12, 12, 12);
+    g3.fillStyle(0xffaa00, 1);
+    g3.fillCircle(12, 12, 8);
+    g3.generateTexture('coin', 24, 24);
+    g3.destroy();
+
+    // Create enemy texture
+    var g4 = this.make.graphics({{ add: false }});
+    g4.fillStyle(0xff4444, 1);
+    g4.fillRect(0, 0, 32, 32);
+    g4.fillStyle(0xffffff, 1);
+    g4.fillCircle(10, 10, 4);
+    g4.fillCircle(22, 10, 4);
+    g4.generateTexture('enemy', 32, 32);
+    g4.destroy();
+
+    // Create particle texture
+    var g5 = this.make.graphics({{ add: false }});
+    g5.fillStyle(0xffffff, 1);
+    g5.fillCircle(4, 4, 4);
+    g5.generateTexture('particle', 8, 8);
+    g5.destroy();
+}}
+```
+
+Make graphics DETAILED and VISUALLY APPEALING:
+- Player: colored body with eyes and features
+- Enemies: menacing shapes with eyes
+- Platforms: textured with grass/stone patterns
+- Coins: shiny gold with highlights
+- Backgrounds: gradient sky, stars, clouds using graphics
+- Particles: for effects (explosion, trail, spark)
+
+## AUDIO (WHEN PLACEHOLDERS)
+When audio shows "[placeholder]" or "CREATE IN CODE", use the Web Audio API for simple sounds:
+
+```javascript
+function playSound(frequency, duration, type) {{
+    try {{
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = frequency;
+        osc.type = type || 'square';
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+    }} catch(e) {{}}
+}}
+```
+
+Use for: jump sounds (440Hz, 0.1s), collect sounds (880Hz, 0.15s), death sounds (220Hz, 0.3s), shoot sounds (660Hz, 0.05s).
+
+## GAME QUALITY REQUIREMENTS
+- Smooth player movement with acceleration/deceleration
+- Camera follow for scrolling games
+- Visual feedback (score display, particle effects on collect/hit)
+- Screen shake on impacts
+- Proper game states (playing, game over, win) with restart
+- Responsive controls (variable jump height based on hold time)
+- Enemy AI (patrol, chase, or spawn patterns)
+- At least 3-5 distinct visual elements (not all same colored rectangles)
+
+## ASSET URLS
 {asset_list}
 
-GAME DESIGN DOCUMENT:
+## GAME DESIGN DOCUMENT
 {gdd_json}
 
 Output only the JavaScript code, nothing else."""
@@ -113,7 +198,14 @@ class EngineerAgent(BaseAgent):
         lines: list[str] = []
         for i, asset in enumerate(state.assets, start=1):
             url = asset.asset_url or "(not yet generated)"
-            note = " [placeholder]" if "data:image/svg+xml" in url or "google.com/sounds" in url else ""
+            if "PLACEHOLDER:code-drawn" in url:
+                note = " [CREATE IN CODE - draw this sprite in preload()]"
+            elif "PLACEHOLDER:code-sound" in url:
+                note = " [CREATE IN CODE - use Web Audio API oscillator]"
+            elif "google.com/sounds" in url:
+                note = " [placeholder audio]"
+            else:
+                note = ""
             lines.append(f"{i}. {asset.name} ({asset.type}): {url}{note}")
         return "\n".join(lines) if lines else "(no assets)"
 

@@ -40,7 +40,13 @@ _HTML_TEMPLATE = """\
   <div id="game-container"></div>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
   <script>
+try {{
 {game_js}
+}} catch(e) {{
+    document.getElementById('game-container').innerHTML =
+    '<div style="color:#e94560;padding:40px;text-align:center;font-family:monospace;">' +
+    '<h2>Game Error</h2><p>' + e.message + '</p></div>';
+}}
   </script>
 </body>
 </html>"""
