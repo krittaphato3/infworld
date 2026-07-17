@@ -24,3 +24,4 @@ gen*.js
 .idea/
 *.swp
 .playwright-mcp/
+LibraryProjectProjectInfWorldstatic*

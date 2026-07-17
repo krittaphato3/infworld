@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
 from models import GameState, GamePrompt
 from agents.director import DirectorAgent
@@ -17,7 +18,7 @@ games: dict[str, GameState] = {}
 async def run_pipeline(prompt: GamePrompt) -> GameState:
     """Run all four agents in sequence and return the final game state."""
     game_id = str(uuid.uuid4())[:8]
-    state = GameState(game_id=game_id, prompt=prompt.prompt, status="running")
+    state = GameState(game_id=game_id, prompt=prompt.prompt, status="running", created_at=datetime.now().isoformat())
     games[game_id] = state
 
     agents = [

@@ -16,6 +16,8 @@ from models import (
     ConfigUpdate,
     EditGameRequest,
     GamePrompt,
+    GameSummary,
+    GamesListResponse,
     GenerateResponse,
     GameStatusResponse,
 )
@@ -158,6 +160,34 @@ async def edit_game_endpoint(request: EditGameRequest):
         status=state.status,
         message="Game updated successfully!",
     )
+
+
+@app.get("/api/games", response_model=GamesListResponse)
+async def list_games(
+    sort: str = "newest",
+    search: str = "",
+) -> GamesListResponse:
+    """List all generated games with optional sorting and search."""
+    game_list = []
+    for gid, state in games.items():
+        title = state.gdd.title if state.gdd else "Untitled"
+        if search and search.lower() not in title.lower() and search.lower() not in state.prompt.lower():
+            continue
+        game_list.append(GameSummary(
+            game_id=state.game_id,
+            title=title,
+            prompt=state.prompt[:200],
+            status=state.status,
+            created_at=state.created_at,
+            asset_count=len(state.assets),
+        ))
+
+    if sort == "oldest":
+        game_list.sort(key=lambda g: g.created_at)
+    else:
+        game_list.sort(key=lambda g: g.created_at, reverse=True)
+
+    return GamesListResponse(games=game_list, total=len(game_list))
 
 
 @app.post("/api/test-connection")

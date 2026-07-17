@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -48,6 +50,25 @@ class GameState(BaseModel):
     index_html: str = ""
     status: str = "pending"
     error: str | None = None
+    created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
+
+
+class GameSummary(BaseModel):
+    """Compact game info for the explore gallery."""
+
+    game_id: str
+    title: str
+    prompt: str
+    status: str
+    created_at: str
+    asset_count: int
+
+
+class GamesListResponse(BaseModel):
+    """Response for GET /api/games."""
+
+    games: list[GameSummary]
+    total: int
 
 
 class GenerateResponse(BaseModel):

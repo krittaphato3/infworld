@@ -1,1058 +1,520 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Infinite Realms</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infinite Realms - AI Game Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
 <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            bg: "#0a0a1a",
-            surface: "#12122a",
-            card: "#1a1a3e",
-            border: "#2a2a5e",
-            accent: "#e94560",
-            "accent-hover": "#ff6b81",
-            secondary: "#0f3460",
-            "text-primary": "#e0e0ff",
-            "text-secondary": "#8888aa",
-            success: "#00ff88",
-            error: "#ff4444",
-          },
-          fontFamily: {
-            orbitron: ["Orbitron", "sans-serif"],
-            inter: ["Inter", "system-ui", "sans-serif"],
-          },
-        },
-      },
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { accent: "#e94560", success: "#00ff88", surface: "#12122a", panel: "#1a1a3e", neon: "#00d4ff" },
+      fontFamily: { heading: ["Orbitron", "sans-serif"], body: ["Inter", "sans-serif"] }
     }
-  </script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0; background: #0a0a1a; color: #e0e0ff;
-      font-family: "Inter", system-ui, sans-serif; overflow-x: hidden;
-    }
-    ::selection { background: #e94560; color: #fff; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #0a0a1a; }
-    ::-webkit-scrollbar-thumb { background: #2a2a5e; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #e94560; }
-
-    .particle-field {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
-    }
-    .particle {
-      position: absolute; border-radius: 50%; opacity: 0;
-      animation: particleFloat linear infinite;
-    }
-    @keyframes particleFloat {
-      0%   { opacity: 0; transform: translateY(100vh) scale(0); }
-      10%  { opacity: 1; }
-      90%  { opacity: 1; }
-      100% { opacity: 0; transform: translateY(-10vh) scale(1); }
-    }
-
-    .grid-bg {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background-image:
-        linear-gradient(rgba(42,42,94,0.15) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(42,42,94,0.15) 1px, transparent 1px);
-      background-size: 60px 60px;
-      mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, black 30%, transparent 70%);
-      -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, black 30%, transparent 70%);
-    }
-
-    .neon-title {
-      font-family: "Orbitron", sans-serif; color: #e94560;
-      text-shadow: 0 0 7px #e94560, 0 0 10px #e94560, 0 0 21px #e94560,
-                   0 0 42px #0f3460, 0 0 82px #0f3460;
-      animation: titlePulse 3s ease-in-out infinite;
-    }
-    @keyframes titlePulse {
-      0%, 100% { text-shadow: 0 0 7px #e94560, 0 0 10px #e94560, 0 0 21px #e94560, 0 0 42px #0f3460, 0 0 82px #0f3460; }
-      50%      { text-shadow: 0 0 10px #e94560, 0 0 20px #e94560, 0 0 40px #e94560, 0 0 80px #0f3460, 0 0 120px #0f3460; }
-    }
-
-    .gradient-btn {
-      position: relative;
-      background: linear-gradient(135deg, #e94560 0%, #c23152 50%, #0f3460 100%);
-      background-size: 200% 200%;
-      animation: gradientShift 4s ease infinite;
-      transition: transform 0.15s ease, box-shadow 0.3s ease;
-      box-shadow: 0 0 20px rgba(233,69,96,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
-    }
-    .gradient-btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 0 30px rgba(233,69,96,0.5), 0 0 60px rgba(233,69,96,0.2), inset 0 1px 0 rgba(255,255,255,0.15);
-    }
-    .gradient-btn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
-    .gradient-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(0.4); }
-    @keyframes gradientShift {
-      0%   { background-position: 0% 50%; }
-      50%  { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    .secondary-btn {
-      background: #1a1a3e; border: 1px solid #2a2a5e; transition: all 0.2s ease;
-    }
-    .secondary-btn:hover {
-      border-color: #e94560; box-shadow: 0 0 15px rgba(233,69,96,0.2); color: #e94560;
-    }
-
-    .prompt-textarea {
-      background: #12122a; border: 1px solid #2a2a5e; color: #e0e0ff;
-      transition: border-color 0.3s ease, box-shadow 0.3s ease; resize: none;
-    }
-    .prompt-textarea::placeholder { color: #555577; }
-    .prompt-textarea:focus {
-      outline: none; border-color: #e94560;
-      box-shadow: 0 0 0 3px rgba(233,69,96,0.15), 0 0 20px rgba(233,69,96,0.1);
-    }
-
-    .view-section {
-      display: none; animation: fadeSlideIn 0.5s ease forwards;
-    }
-    .view-section.active { display: block; }
-    @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .stepper-line {
-      position: absolute; left: 15px; top: 36px; bottom: 0; width: 2px; background: #2a2a5e;
-    }
-    .stepper-line-fill {
-      position: absolute; left: 15px; top: 36px; width: 2px; background: #00ff88;
-      transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 8px rgba(0,255,136,0.4);
-    }
-    .step-dot {
-      width: 32px; height: 32px; border-radius: 50%; border: 2px solid #2a2a5e;
-      background: #12122a; display: flex; align-items: center; justify-content: center;
-      transition: all 0.4s ease; position: relative; z-index: 2; flex-shrink: 0;
-    }
-    .step-dot.active {
-      border-color: #e94560; box-shadow: 0 0 15px rgba(233,69,96,0.5);
-      animation: stepPulse 2s ease-in-out infinite;
-    }
-    .step-dot.complete {
-      border-color: #00ff88; background: #00ff88; box-shadow: 0 0 15px rgba(0,255,136,0.5);
-    }
-    @keyframes stepPulse {
-      0%, 100% { box-shadow: 0 0 15px rgba(233,69,96,0.5); }
-      50%      { box-shadow: 0 0 25px rgba(233,69,96,0.8), 0 0 50px rgba(233,69,96,0.3); }
-    }
-
-    .sparkle {
-      position: absolute; width: 4px; height: 4px; border-radius: 50%;
-      background: #e94560; opacity: 0; animation: sparkleFloat 1.5s ease-in-out infinite;
-    }
-    .sparkle:nth-child(1) { animation-delay: 0s;   top: -8px;  left: 50%; }
-    .sparkle:nth-child(2) { animation-delay: 0.3s; top: 50%;   right: -8px; }
-    .sparkle:nth-child(3) { animation-delay: 0.6s; bottom: -8px; left: 50%; }
-    .sparkle:nth-child(4) { animation-delay: 0.9s; top: 50%;   left: -8px; }
-    @keyframes sparkleFloat {
-      0%   { opacity: 0; transform: scale(0); }
-      50%  { opacity: 1; transform: scale(1.5); }
-      100% { opacity: 0; transform: scale(0); }
-    }
-
-    .game-frame {
-      border: 2px solid #2a2a5e; border-radius: 12px; overflow: hidden;
-      transition: border-color 0.3s ease, box-shadow 0.3s ease;
-      box-shadow: 0 0 30px rgba(233,69,96,0.1);
-    }
-    .game-frame:hover {
-      border-color: #e94560;
-      box-shadow: 0 0 40px rgba(233,69,96,0.25), 0 0 80px rgba(15,52,96,0.15);
-    }
-
-    .toast-container {
-      position: fixed; bottom: 24px; right: 24px; z-index: 1000;
-      display: flex; flex-direction: column-reverse; gap: 10px; pointer-events: none;
-    }
-    .toast {
-      pointer-events: auto; padding: 14px 20px; border-radius: 10px; font-size: 14px;
-      font-weight: 500; display: flex; align-items: center; gap: 10px; max-width: 380px;
-      animation: toastIn 0.4s cubic-bezier(0.21,1.02,0.73,1) forwards;
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    }
-    .toast.removing { animation: toastOut 0.3s ease forwards; }
-    .toast-success {
-      background: rgba(0,255,136,0.12); border: 1px solid rgba(0,255,136,0.3); color: #00ff88;
-    }
-    .toast-error {
-      background: rgba(255,68,68,0.12); border: 1px solid rgba(255,68,68,0.3); color: #ff4444;
-    }
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateX(40px) scale(0.95); }
-      to   { opacity: 1; transform: translateX(0) scale(1); }
-    }
-    @keyframes toastOut {
-      from { opacity: 1; transform: translateX(0) scale(1); }
-      to   { opacity: 0; transform: translateX(40px) scale(0.95); }
-    }
-
-    :focus-visible { outline: 2px solid #e94560; outline-offset: 2px; }
-
-    .scanlines::after {
-      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 999;
-      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-    }
-
-    .char-count { transition: color 0.2s ease; }
-    .char-count.near-limit { color: #ffaa00; }
-    .char-count.at-limit { color: #ff4444; }
-
-    .copy-btn { transition: all 0.2s ease; }
-    .copy-btn.copied { color: #00ff88 !important; border-color: #00ff88 !important; }
-
-    @media (max-width: 640px) {
-      .neon-title { font-size: 2rem; letter-spacing: 0.1em; }
-    }
-  
-    /* ===== SETTINGS PANEL STYLES ===== */
-    .settings-overlay {
-      position: fixed; inset: 0; z-index: 500;
-      background: rgba(10, 10, 26, 0.7);
-      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-      opacity: 0; visibility: hidden;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
-    }
-    .settings-overlay.open { opacity: 1; visibility: visible; }
-
-    .settings-panel {
-      position: fixed; top: 0; right: 0; bottom: 0; z-index: 501;
-      width: 100%; max-width: 520px;
-      background: #12122a; border-left: 1px solid #2a2a5e;
-      box-shadow: -8px 0 40px rgba(0,0,0,0.5);
-      transform: translateX(100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      display: flex; flex-direction: column; overflow: hidden;
-    }
-    .settings-panel.open { transform: translateX(0); }
-    .settings-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #2a2a5e; flex-shrink: 0; }
-    .settings-body { flex: 1; overflow-y: auto; padding: 0 24px 24px; }
-    .settings-body::-webkit-scrollbar { width: 4px; }
-    .settings-body::-webkit-scrollbar-track { background: transparent; }
-    .settings-body::-webkit-scrollbar-thumb { background: #2a2a5e; border-radius: 2px; }
-    .settings-footer { padding: 16px 24px; border-top: 1px solid #2a2a5e; flex-shrink: 0; }
-    .api-section { border-radius: 12px; border: 1px solid #2a2a5e; background: #1a1a3e; padding: 20px; margin-top: 16px; transition: border-color 0.3s ease; }
-    .api-section:first-child { margin-top: 20px; }
-    .api-section:hover { border-color: #3a3a6e; }
-    .api-section.required-api { border-left: 3px solid #e94560; }
-    .api-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-    .api-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: background 0.3s ease, box-shadow 0.3s ease; }
-    .api-dot.configured { background: #00ff88; box-shadow: 0 0 8px rgba(0,255,136,0.5); }
-    .api-dot.unconfigured { background: #555577; }
-    .api-badge { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
-    .api-badge.set { background: rgba(0,255,136,0.12); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
-    .api-badge.not-set { background: rgba(136,136,170,0.12); color: #8888aa; border: 1px solid rgba(136,136,170,0.3); }
-    .api-required-label { font-size: 10px; font-weight: 600; color: #e94560; text-transform: uppercase; letter-spacing: 0.08em; margin-left: 6px; }
-    .api-optional-label { font-size: 10px; font-weight: 600; color: #8888aa; text-transform: uppercase; letter-spacing: 0.08em; margin-left: 6px; }
-    .api-description { font-size: 12px; color: #8888aa; line-height: 1.5; margin-bottom: 16px; }
-    .api-field { margin-bottom: 12px; }
-    .api-field:last-child { margin-bottom: 0; }
-    .api-field label { display: block; font-size: 11px; font-weight: 600; color: #8888aa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
-    .api-field input { width: 100%; padding: 10px 12px; font-size: 13px; font-family: "Inter", system-ui, sans-serif; background: #12122a; border: 1px solid #2a2a5e; border-radius: 8px; color: #e0e0ff; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
-    .api-field input::placeholder { color: #444466; }
-    .api-field input:focus { outline: none; border-color: #e94560; box-shadow: 0 0 0 3px rgba(233,69,96,0.15); }
-    .test-conn-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 14px; font-size: 12px; font-weight: 600; font-family: "Inter", system-ui, sans-serif; color: #8888aa; background: transparent; border: 1px solid #2a2a5e; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.02em; }
-    .test-conn-btn:hover { border-color: #e94560; color: #e94560; box-shadow: 0 0 10px rgba(233,69,96,0.15); }
-    .test-conn-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .test-conn-btn.testing { border-color: #ffaa00; color: #ffaa00; }
-    .test-conn-btn.success { border-color: #00ff88; color: #00ff88; }
-    .test-conn-btn.error { border-color: #ff4444; color: #ff4444; }
-    .password-wrapper { position: relative; }
-    .password-wrapper input { padding-right: 40px; }
-    .password-toggle { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 6px; color: #8888aa; transition: color 0.2s ease; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
-    .password-toggle:hover { color: #e0e0ff; }
-    .password-toggle:focus-visible { outline: 2px solid #e94560; outline-offset: 2px; }
-    .settings-save-btn { width: 100%; padding: 14px; font-size: 14px; font-weight: 600; font-family: "Inter", system-ui, sans-serif; letter-spacing: 0.03em; background: linear-gradient(135deg, #e94560 0%, #c23152 50%, #0f3460 100%); background-size: 200% 200%; animation: gradientShift 4s ease infinite; color: white; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.3s ease; box-shadow: 0 0 20px rgba(233,69,96,0.3); }
-    .settings-save-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 30px rgba(233,69,96,0.5), 0 0 60px rgba(233,69,96,0.2); }
-    .settings-save-btn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
-    .settings-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .settings-save-btn .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .gear-btn { position: fixed; top: 16px; right: 16px; z-index: 400; width: 44px; height: 44px; border-radius: 12px; background: #1a1a3e; border: 1px solid #2a2a5e; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; color: #8888aa; }
-    .gear-btn:hover { border-color: #e94560; color: #e94560; box-shadow: 0 0 15px rgba(233,69,96,0.3); }
-    .gear-btn:focus-visible { outline: 2px solid #e94560; outline-offset: 2px; }
-    .gear-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; background: #e94560; color: white; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1; box-shadow: 0 0 8px rgba(233,69,96,0.5); transition: opacity 0.3s ease, transform 0.3s ease; }
-    .gear-badge.hidden { opacity: 0; transform: scale(0); }
-    @media (max-width: 640px) { .settings-panel { max-width: 100%; } .settings-body { padding: 0 16px 16px; } .settings-header { padding: 16px; } .settings-footer { padding: 12px 16px; } .api-section { padding: 16px; } }
-  </style>
+  }
+}
+</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: "Inter", sans-serif; background: #0a0a1a; color: #fff; min-height: 100vh; overflow-x: hidden; }
+.hero-glow { position: absolute; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(233,69,96,0.15), transparent 70%); top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; }
+.particle { position: absolute; width: 2px; height: 2px; background: #e94560; border-radius: 50%; opacity: 0; animation: float 8s infinite; }
+@keyframes float { 0%{opacity:0;transform:translateY(0)} 10%{opacity:0.6} 90%{opacity:0.6} 100%{opacity:0;transform:translateY(-200px)} }
+.gradient-btn { background: linear-gradient(135deg, #e94560, #c23152); border: none; color: white; padding: 16px 40px; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }
+.gradient-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(233,69,96,0.4); }
+.gradient-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.secondary-btn { background: transparent; border: 2px solid rgba(255,255,255,0.15); color: #fff; padding: 12px 28px; border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 10px; }
+.secondary-btn:hover { border-color: #e94560; background: rgba(233,69,96,0.08); }
+.view-section { display: none; min-height: 100vh; }
+.view-section.active { display: flex; flex-direction: column; }
+.stepper { display: flex; align-items: center; gap: 12px; }
+.step-dot { width: 12px; height: 12px; border-radius: 50%; background: #333; transition: all 0.3s; }
+.step-dot.active { background: #e94560; box-shadow: 0 0 12px #e94560; }
+.step-dot.done { background: #00ff88; box-shadow: 0 0 12px #00ff88; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.explore-card { background: #1a1a3e; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px; transition: all 0.3s; cursor: default; }
+.explore-card:hover { border-color: rgba(233,69,96,0.4); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.explore-card:focus-within { border-color: #e94560; }
+.explore-search { background: #12122a; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 16px 10px 40px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.3s; }
+.explore-search:focus { border-color: #e94560; }
+.explore-sort { background: #12122a; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 16px; color: #fff; font-size: 14px; outline: none; cursor: pointer; }
+.explore-sort:focus { border-color: #e94560; }
+.explore-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 768px) { .explore-grid { grid-template-columns: repeat(2, 1fr); } }
+.explore-status { display: inline-block; padding: 3px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+.explore-status.ready { background: rgba(0,255,136,0.15); color: #00ff88; }
+.explore-status.other { background: rgba(255,255,255,0.08); color: #888; }
+.settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; }
+.settings-overlay.open { display: flex; }
+.settings-panel { background: #12122a; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 32px; width: 90%; max-width: 440px; position: relative; }
+</style>
 </head>
+<body>
+<div id="app" class="relative">
+<!-- Landing Section -->
+<section id="landing-section" class="view-section active">
+<div class="hero-glow"></div>
+<div class="flex flex-col items-center justify-center min-h-screen px-4 relative z-10">
+<h1 class="font-heading text-4xl md:text-6xl font-black mb-4 text-center" style="background: linear-gradient(135deg, #fff, #e94560); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">INFINITE REALMS</h1>
+<p class="text-gray-400 text-lg mb-10 text-center max-w-md">Describe your dream game. AI builds it for you.</p>
+<div class="w-full max-w-xl">
+<textarea id="game-prompt" class="w-full bg-[#12122a] border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 resize-none focus:outline-none focus:border-accent transition mb-4" rows="4" placeholder="A space roguelike with procedurally generated planets..."></textarea>
+<p id="hint-text" class="text-gray-500 text-sm mb-4">Be specific: genre, mechanics, theme, and style.</p>
+<div class="flex flex-col sm:flex-row gap-3 items-center">
+<button id="explore-btn" class="secondary-btn">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+Explore Games
+</button>
+<button id="generate-btn" class="gradient-btn">Generate Game</button>
+</div>
+</div>
+</div>
+<button id="settings-btn" class="absolute top-6 right-6 p-2 rounded-lg hover:bg-white/5 transition" aria-label="Settings">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+</button>
+</section>
+<!-- Loading Section -->
+<section id="loading-section" class="view-section">
+<div class="flex flex-col items-center justify-center min-h-screen px-4">
+<h2 class="font-heading text-2xl md:text-3xl font-bold mb-8 text-center">BUILDING YOUR GAME</h2>
+<div class="stepper mb-8">
+<div id="step-0" class="step-dot active"></div>
+<div class="h-px w-12 bg-gray-700"></div>
+<div id="step-1" class="step-dot"></div>
+<div class="h-px w-12 bg-gray-700"></div>
+<div id="step-2" class="step-dot"></div>
+<div class="h-px w-12 bg-gray-700"></div>
+<div id="step-3" class="step-dot"></div>
+</div>
+<p id="loading-status" class="text-gray-400 text-sm">Analyzing prompt...</p>
+<p class="text-gray-500 text-xs mt-2">Elapsed: <span id="elapsed-time" class="font-mono text-[#e94560]">0:00</span></p>
+</div>
+</section>
+<!-- Result Section -->
+<section id="result-section" class="view-section">
+<div class="flex flex-col min-h-screen">
+<header class="flex items-center justify-between px-4 md:px-8 py-4 border-b border-white/5">
+<button id="back-btn" class="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+Back
+</button>
+<div class="flex gap-2">
+<button id="edit-btn" class="secondary-btn text-sm py-2 px-4">Edit Prompt</button>
+<button id="share-btn" class="secondary-btn text-sm py-2 px-4">Share</button>
+</div>
+</header>
+<main class="flex-1 p-4 md:p-8">
+<div class="w-full h-[60vh] rounded-xl overflow-hidden border border-white/10 bg-[#12122a]">
+<iframe id="game-iframe" class="w-full h-full border-0" title="Generated Game"></iframe>
+</div>
+<div class="mt-4 bg-[#12122a] rounded-xl border border-white/10 p-4">
+<div class="flex items-center gap-2 mb-3">
+<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#e94560]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+<p class="text-sm font-semibold text-white">Edit Game</p>
+</div>
+<div class="flex gap-2">
+<input type="text" id="edit-prompt-input" placeholder="e.g. Add double jump, make sky sunset, add coins..."
+class="flex-1 px-3 py-2 rounded-lg bg-[#1a1a3e] border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#e94560] transition-colors"
+maxlength="2000" aria-label="Edit instructions">
+<button id="edit-apply-btn" type="button"
+class="bg-gradient-to-r from-[#e94560] to-[#0f3460] text-white font-medium py-2 px-4 rounded-lg text-sm flex items-center gap-1.5 flex-shrink-0 hover:opacity-90 transition"
+aria-label="Apply edit to game">
+Apply
+</button>
+</div>
+<p class="text-xs text-gray-500 mt-2">Describe what you want to change. The AI will modify the game code.</p>
+</div>
+</main>
+</div>
+</section>
+<!-- Explore Section -->
+<section id="explore-section" class="view-section">
+<div class="flex flex-col min-h-screen px-4 md:px-8 py-6">
+<div class="flex items-center justify-between mb-8">
+<button id="explore-back-btn" class="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+Back to Home
+</button>
+</div>
+<h2 class="font-heading text-3xl md:text-4xl font-bold mb-2 text-center" style="background: linear-gradient(135deg, #00d4ff, #e94560); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">EXPLORE GAMES</h2>
+<p class="text-gray-400 text-center mb-8">Browse games created by the community</p>
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-8 max-w-2xl mx-auto w-full">
+<div class="relative flex-1">
+<svg class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+<input id="explore-search" type="text" class="explore-search w-full" placeholder="Search games..." aria-label="Search games">
+</div>
+<select id="explore-sort" class="explore-sort" aria-label="Sort games">
+<option value="newest">Newest First</option>
+<option value="oldest">Oldest First</option>
+<option value="az">A to Z</option>
+</select>
+<span id="explore-count" class="text-gray-500 text-sm whitespace-nowrap"></span>
+</div>
+<div id="explore-grid" class="explore-grid max-w-4xl mx-auto w-full"></div>
+<div id="explore-empty" class="hidden text-center py-20">
+<p class="text-gray-500 text-lg">No games found.</p>
+</div>
+</div>
+</section>
+<!-- Settings Overlay -->
+<div id="settings-overlay" class="settings-overlay" role="dialog" aria-modal="true" aria-label="Settings">
+<div class="settings-panel">
+<button id="settings-close" class="absolute top-4 right-4 text-gray-400 hover:text-white" aria-label="Close settings">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+</button>
+<h3 class="font-heading text-xl font-bold mb-6">SETTINGS</h3>
+<label class="block mb-4">
+<span class="text-gray-400 text-sm mb-1 block">API Key</span>
+<div class="relative">
+<input id="api-key-input" type="password" class="w-full bg-[#1a1a3e] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent pr-10" placeholder="Enter your API key">
+<button id="api-key-toggle" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1" aria-label="Toggle API key visibility">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+</button>
+</div>
+</label>
+<label class="block mb-6">
+<span class="text-gray-400 text-sm mb-1 block">API Base URL</span>
+<input id="api-base-input" type="text" class="w-full bg-[#1a1a3e] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent" placeholder="http://localhost:8080">
+</label>
+<button id="settings-save" class="gradient-btn w-full text-sm py-3">Save Settings</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+(function() {
+"use strict";
 
-<body class="scanlines min-h-screen">
+var $ = function(id) { return document.getElementById(id); };
 
-  <div class="particle-field" id="particleField" aria-hidden="true"></div>
-  <div class="grid-bg" aria-hidden="true"></div>
-  <div class="toast-container" id="toastContainer" role="status" aria-live="polite" aria-label="Notifications"></div>
+var API_BASE = "";
+var API_KEY = localStorage.getItem("ir_api_key") || "";
 
-  
-  <!-- Settings Gear Button -->
-  <button type="button" id="settings-gear-btn" class="gear-btn" aria-label="Open API configuration settings">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-    <span id="settings-badge" class="gear-badge hidden" aria-hidden="true">0</span>
-  </button>
-  <!-- Settings Overlay -->
-  <div id="settings-overlay" class="settings-overlay" aria-hidden="true"></div>
-  <!-- Settings Panel -->
-  <aside id="settings-panel" class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-    <div class="settings-header">
-      <h2 id="settings-title" class="font-orbitron text-base font-bold text-text-primary tracking-wider flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e94560" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> API Configuration</h2>
-      <button type="button" id="settings-close-btn" class="text-text-secondary hover:text-text-primary transition-colors p-1 rounded-lg hover:bg-card" aria-label="Close settings panel"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-    </div>
-    <div class="settings-body" id="settings-body">
-      <div class="api-section required-api" data-api="llm">
-        <div class="api-section-header"><div class="flex items-center gap-2"><span class="api-dot unconfigured" id="llm-dot"></span><span class="text-sm font-semibold text-text-primary">LLM (Text Generation)</span><span class="api-required-label">Required</span></div><span class="api-badge not-set" id="llm-badge">NOT SET</span></div>
-        <p class="api-description">Required. Powers the Director, Engineer, and Assembler agents.</p>
-        <div class="api-field"><label for="llm-base-url">Base URL</label><input type="url" id="llm-base-url" placeholder="https://api.openai.com/v1" autocomplete="off" spellcheck="false"></div>
-        <div class="api-field"><label for="llm-api-key">API Key</label><div class="password-wrapper"><input type="password" id="llm-api-key" placeholder="" autocomplete="off" spellcheck="false"><button type="button" class="password-toggle" data-target="llm-api-key" aria-label="Show API key"><svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg><svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button></div></div>
-        <div class="api-field"><label for="llm-model">Model</label><input type="text" id="llm-model" placeholder="gpt-4o" autocomplete="off" spellcheck="false"></div>
-        <button type="button" class="test-conn-btn" data-api="llm" aria-label="Test LLM connection" onclick="window._testConn('llm',this)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          Test Connection
-        </button>
-      </div>
-      <div class="api-section" data-api="image">
-        <div class="api-section-header"><div class="flex items-center gap-2"><span class="api-dot unconfigured" id="image-dot"></span><span class="text-sm font-semibold text-text-primary">Image Generation</span><span class="api-optional-label">Optional</span></div><span class="api-badge not-set" id="image-badge">NOT SET</span></div>
-        <p class="api-description">Optional. Generates game sprites and backgrounds. Without it, colored placeholders are used.</p>
-        <div class="api-field"><label for="image-base-url">Base URL</label><input type="url" id="image-base-url" placeholder="https://api.openai.com/v1" autocomplete="off" spellcheck="false"></div>
-        <div class="api-field"><label for="image-api-key">API Key</label><div class="password-wrapper"><input type="password" id="image-api-key" placeholder="" autocomplete="off" spellcheck="false"><button type="button" class="password-toggle" data-target="image-api-key" aria-label="Show API key"><svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg><svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button></div></div>
-        <div class="api-field"><label for="image-model">Model</label><input type="text" id="image-model" placeholder="dall-e-3" autocomplete="off" spellcheck="false"></div>
-        <button type="button" class="test-conn-btn" data-api="image" aria-label="Test Image API connection" onclick="window._testConn('image',this)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          Test Connection
-        </button>
-      </div>
-      <div class="api-section" data-api="audio">
-        <div class="api-section-header"><div class="flex items-center gap-2"><span class="api-dot unconfigured" id="audio-dot"></span><span class="text-sm font-semibold text-text-primary">Audio Generation (TTS / SFX)</span><span class="api-optional-label">Optional</span></div><span class="api-badge not-set" id="audio-badge">NOT SET</span></div>
-        <p class="api-description">Optional. Generates sound effects and music. Without it, placeholder audio is used.</p>
-        <div class="api-field"><label for="audio-base-url">Base URL</label><input type="url" id="audio-base-url" placeholder="https://api.openai.com/v1" autocomplete="off" spellcheck="false"></div>
-        <div class="api-field"><label for="audio-api-key">API Key</label><div class="password-wrapper"><input type="password" id="audio-api-key" placeholder="" autocomplete="off" spellcheck="false"><button type="button" class="password-toggle" data-target="audio-api-key" aria-label="Show API key"><svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg><svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button></div></div>
-        <div class="api-field"><label for="audio-model">Model</label><input type="text" id="audio-model" placeholder="tts-1" autocomplete="off" spellcheck="false"></div>
-        <button type="button" class="test-conn-btn" data-api="audio" aria-label="Test Audio API connection" onclick="window._testConn('audio',this)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          Test Connection
-        </button>
-      </div>
-    </div>
-    <div class="settings-footer">
-      <button type="button" id="settings-save-btn" class="settings-save-btn" aria-label="Save API configuration">Save Configuration</button>
-    </div>
-  </aside>
-  <main class="relative z-10 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
-    <div class="w-full max-w-2xl mx-auto" id="app">
+var sections = {
+  landing: $("landing-section"),
+  loading: $("loading-section"),
+  result: $("result-section"),
+  explore: $("explore-section")
+};
 
-      <!-- STATE 1: Landing -->
-      <section id="landing-section" class="view-section active" aria-label="Game generation form">
-        <div class="h-8 sm:h-12" aria-hidden="true"></div>
-        <header class="text-center mb-10 sm:mb-14">
-          <h1 class="neon-title text-4xl sm:text-5xl lg:text-6xl font-black tracking-widest leading-tight mb-4">INFINITE REALMS</h1>
-          <p class="text-text-secondary text-base sm:text-lg font-light tracking-wide">Describe your dream game. We will build it.</p>
-        </header>
-        <div class="bg-surface rounded-2xl border border-border p-5 sm:p-7 shadow-2xl" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 1px rgba(233,69,96,0.1);">
-          <label for="prompt-input" class="block text-sm font-medium text-text-secondary mb-2 tracking-wide">Your Game Idea</label>
-          <div class="relative">
-            <textarea id="prompt-input" rows="5" maxlength="2000"
-              class="prompt-textarea w-full p-4 pr-20 rounded-xl text-sm sm:text-base leading-relaxed font-inter"
-              aria-describedby="char-count hint-text" placeholder=""></textarea>
-            <span id="char-count" class="char-count absolute bottom-3 right-4 text-xs text-text-secondary font-mono" aria-live="polite">0/2000</span>
-          </div>
-          <p id="hint-text" class="mt-2 text-xs text-text-secondary flex items-center gap-1.5">
-            <kbd class="inline-flex items-center px-1.5 py-0.5 rounded bg-card border border-border text-[10px] font-mono text-text-secondary">Ctrl</kbd>
-            <span>+</span>
-            <kbd class="inline-flex items-center px-1.5 py-0.5 rounded bg-card border border-border text-[10px] font-mono text-text-secondary">Enter</kbd>
-            <span class="ml-1">to generate</span>
-          </p>
-          <button id="generate-btn" type="button"
-            class="gradient-btn w-full mt-5 text-white font-semibold py-3.5 px-6 rounded-xl text-sm sm:text-base tracking-wide"
-            aria-label="Generate game from prompt">
-            <span id="btn-label" class="flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-              </svg>
-              Generate Game
-            </span>
-          </button>
-          <div id="error-msg" class="hidden mt-4 p-3 rounded-lg bg-error/10 border border-error/30 text-error text-sm flex items-start gap-2" role="alert">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-            </svg>
-            <span id="error-text"></span>
-          </div>
-        </div>
-        <div class="h-8 sm:h-12" aria-hidden="true"></div>
-      </section>
+var currentGameId = null;
+var elapsedTimer = null;
+var elapsedSeconds = 0;
 
-      <!-- STATE 2: Loading -->
-      <section id="loading-section" class="view-section" aria-label="Game generation progress" aria-busy="true">
-        <div class="h-8 sm:h-12" aria-hidden="true"></div>
-        <div class="text-center mb-10">
-          <h2 class="font-orbitron text-2xl sm:text-3xl font-bold text-accent tracking-wider mb-2">GENERATING</h2>
-          <p class="text-text-secondary text-sm sm:text-base" id="loading-subtitle">Your game is being crafted by our AI agents...</p>
-        </div>
-        <div class="bg-surface rounded-2xl border border-border p-6 sm:p-8 shadow-2xl" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
-          <div class="space-y-0" id="stepper" role="list" aria-label="Generation steps">
-            <div class="flex gap-4 items-start relative" role="listitem">
-              <div class="stepper-line" aria-hidden="true"></div>
-              <div class="stepper-line-fill" id="line-0" style="height:0;" aria-hidden="true"></div>
-              <div class="step-dot active" id="dot-0" aria-label="Director Agent - in progress">
-                <div class="sparkle" aria-hidden="true"></div><div class="sparkle" aria-hidden="true"></div>
-                <div class="sparkle" aria-hidden="true"></div><div class="sparkle" aria-hidden="true"></div>
-                <span class="w-2.5 h-2.5 rounded-full bg-accent" id="dot-inner-0"></span>
-              </div>
-              <div class="pb-8 pt-1 flex-1 min-w-0">
-                <p class="font-orbitron text-sm font-semibold text-text-primary tracking-wide" id="step-title-0">Director Agent</p>
-                <p class="text-xs text-text-secondary mt-0.5" id="step-desc-0">Drafting game design document...</p>
-              </div>
-            </div>
-            <div class="flex gap-4 items-start relative" role="listitem">
-              <div class="stepper-line" aria-hidden="true"></div>
-              <div class="stepper-line-fill" id="line-1" style="height:0;" aria-hidden="true"></div>
-              <div class="step-dot" id="dot-1" aria-label="Asset Agent - pending">
-                <span class="w-2.5 h-2.5 rounded-full bg-border" id="dot-inner-1"></span>
-              </div>
-              <div class="pb-8 pt-1 flex-1 min-w-0">
-                <p class="font-orbitron text-sm font-semibold text-text-secondary tracking-wide" id="step-title-1">Asset Agent</p>
-                <p class="text-xs text-text-secondary mt-0.5" id="step-desc-1">Generating images and audio...</p>
-              </div>
-            </div>
-            <div class="flex gap-4 items-start relative" role="listitem">
-              <div class="stepper-line" aria-hidden="true"></div>
-              <div class="stepper-line-fill" id="line-2" style="height:0;" aria-hidden="true"></div>
-              <div class="step-dot" id="dot-2" aria-label="Engineer Agent - pending">
-                <span class="w-2.5 h-2.5 rounded-full bg-border" id="dot-inner-2"></span>
-              </div>
-              <div class="pb-8 pt-1 flex-1 min-w-0">
-                <p class="font-orbitron text-sm font-semibold text-text-secondary tracking-wide" id="step-title-2">Engineer Agent</p>
-                <p class="text-xs text-text-secondary mt-0.5" id="step-desc-2">Writing Phaser.js game code...</p>
-              </div>
-            </div>
-            <div class="flex gap-4 items-start relative" role="listitem">
-              <div class="step-dot" id="dot-3" aria-label="Assembler Agent - pending">
-                <span class="w-2.5 h-2.5 rounded-full bg-border" id="dot-inner-3"></span>
-              </div>
-              <div class="pt-1 flex-1 min-w-0">
-                <p class="font-orbitron text-sm font-semibold text-text-secondary tracking-wide" id="step-title-3">Assembler Agent</p>
-                <p class="text-xs text-text-secondary mt-0.5" id="step-desc-3">Bundling the final game...</p>
-              </div>
-            </div>
-          </div>
-          <div class="mt-6 pt-5 border-t border-border flex items-center justify-between">
-            <span class="text-xs text-text-secondary">Elapsed time</span>
-            <span class="text-sm font-mono text-accent font-semibold" id="eta-display">0:00</span>
-          </div>
-        </div>
-        <div class="h-8 sm:h-12" aria-hidden="true"></div>
-      </section>
+function startElapsedTimer() {
+  elapsedSeconds = 0;
+  updateElapsedDisplay();
+  elapsedTimer = setInterval(function() {
+    elapsedSeconds++;
+    updateElapsedDisplay();
+  }, 1000);
+}
 
-      <!-- STATE 3: Game Ready -->
-      <section id="result-section" class="view-section" aria-label="Generated game">
-        <div class="h-8 sm:h-12" aria-hidden="true"></div>
-        <div class="text-center mb-6">
-          <h2 class="font-orbitron text-xl sm:text-2xl font-bold text-success tracking-wider flex items-center justify-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            GAME READY
-          </h2>
-          <p class="text-text-secondary text-sm mt-2" id="game-title-display">Your game is loaded below</p>
-        </div>
-        <div class="game-frame">
-          <div class="relative" style="padding-top:62.5%;">
-            <iframe id="game-iframe" class="absolute inset-0 w-full h-full bg-black" title="Generated game" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3 mt-5">
-          <button id="fullscreen-btn" type="button"
-            class="secondary-btn text-text-primary font-medium py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2"
-            aria-label="Open game in fullscreen in a new tab">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline>
-              <line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line>
-            </svg>
-            Fullscreen
-          </button>
-          <button id="new-game-btn" type="button"
-            class="gradient-btn text-white font-medium py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2"
-            aria-label="Create a new game">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            New Game
-          </button>
-        </div>
-        <div class="mt-4 bg-surface rounded-xl border border-border p-4 flex items-center gap-3">
-          <div class="flex-1 min-w-0">
-            <p class="text-xs text-text-secondary mb-1">Share this game</p>
-            <p class="text-sm text-text-primary truncate font-mono" id="share-url">--</p>
-          </div>
-          <button id="copy-btn" type="button"
-            class="copy-btn flex-shrink-0 secondary-btn text-text-secondary font-medium py-2 px-4 rounded-lg text-xs flex items-center gap-1.5"
-            aria-label="Copy game link to clipboard">
-            <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-            <span id="copy-label">Copy</span>
-          </button>
-        </div>
-        <div class="mt-4 bg-surface rounded-xl border border-border p-4">
-          <div class="flex items-center gap-2 mb-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-            <p class="text-sm font-semibold text-text-primary">Edit Game</p>
-          </div>
-          <div class="flex gap-2">
-            <input type="text" id="edit-prompt-input" placeholder="e.g. Add double jump, make player bigger, add more enemies..." 
-              class="flex-1 px-3 py-2 rounded-lg bg-card border border-border text-text-primary text-sm placeholder-text-secondary focus:outline-none focus:border-accent transition-colors"
-              maxlength="2000" aria-label="Edit instructions">
-            <button id="edit-btn" type="button"
-              class="gradient-btn text-white font-medium py-2 px-4 rounded-lg text-sm flex items-center gap-1.5 flex-shrink-0"
-              aria-label="Apply edit to game">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline></svg>
-              Apply
-            </button>
-          </div>
-          <p class="text-xs text-text-secondary mt-2">Describe what you want to change. The AI will modify the game code.</p>
-          <div id="edit-error-msg" class="hidden mt-3 p-2 rounded-lg bg-error/10 border border-error/30 text-error text-xs" role="alert"></div>
-        </div>
-        <div class="h-8 sm:h-12" aria-hidden="true"></div>
-      </section>
+function stopElapsedTimer() {
+  if (elapsedTimer) {
+    clearInterval(elapsedTimer);
+    elapsedTimer = null;
+  }
+}
 
-    </div>
-  </main>
-  <script>
-    window._testConn = async function(apiType, btn) {
-      btn.disabled = true;
-      var origHTML = btn.innerHTML;
-      btn.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span> Testing...';
-      btn.style.borderColor = '#ffaa00';
-      btn.style.color = '#ffaa00';
-      try {
-        var resp = await fetch("/api/test-connection?api_type=" + encodeURIComponent(apiType), { method: "POST" });
-        var data = await resp.json();
-        if (data.status === "ok" || data.status === "skip") {
-          btn.style.borderColor = '#00ff88';
-          btn.style.color = '#00ff88';
-          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ' + (data.status === "skip" ? "Skipped" : "Connected");
-          var toast = document.createElement("div");
-          toast.className = "toast toast-success";
-          toast.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg><span>' + data.message + '</span>';
-          document.getElementById("toastContainer").appendChild(toast);
-          setTimeout(function(){ toast.classList.add("removing"); setTimeout(function(){ toast.remove(); }, 300); }, 4000);
-        } else {
-          btn.style.borderColor = '#ff4444';
-          btn.style.color = '#ff4444';
-          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Failed';
-          var toast2 = document.createElement("div");
-          toast2.className = "toast toast-error";
-          toast2.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg><span>' + data.message + '</span>';
-          document.getElementById("toastContainer").appendChild(toast2);
-          setTimeout(function(){ toast2.classList.add("removing"); setTimeout(function(){ toast2.remove(); }, 300); }, 4000);
-        }
-      } catch (e) {
-        btn.style.borderColor = '#ff4444';
-        btn.style.color = '#ff4444';
-        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Failed';
-      } finally {
-        btn.disabled = false;
-        setTimeout(function() { btn.style.borderColor = ''; btn.style.color = ''; btn.innerHTML = origHTML; }, 3000);
+function updateElapsedDisplay() {
+  var mins = Math.floor(elapsedSeconds / 60);
+  var secs = elapsedSeconds % 60;
+  var el = $("elapsed-time");
+  if (el) el.textContent = mins + ":" + (secs < 10 ? "0" : "") + secs;
+}
+
+function showView(name) {
+  Object.keys(sections).forEach(function(k) {
+    sections[k].classList.remove("active");
+  });
+  if (sections[name]) sections[name].classList.add("active");
+}
+
+var steps = ["Analyzing prompt...", "Designing game systems...", "Generating assets...", "Building world..."];
+function setStep(n) {
+  for (var i = 0; i < 4; i++) {
+    var dot = $("step-" + i);
+    dot.className = "step-dot";
+    if (i < n) dot.classList.add("done");
+    else if (i === n) dot.classList.add("active");
+  }
+  $("loading-status").textContent = steps[n] || "Done";
+}
+
+var exploreGames = [];
+var exploreSort = "newest";
+var exploreSearch = "";
+var _searchTimeout = null;
+
+function escapeHtml(str) {
+  var div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatTimeAgo(dateStr) {
+  var now = Date.now();
+  var then = new Date(dateStr).getTime();
+  var diff = Math.max(0, Math.floor((now - then) / 1000));
+  if (diff < 60) return diff + "s ago";
+  if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+  if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+  if (diff < 2592000) return Math.floor(diff / 86400) + "d ago";
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function showExplore() {
+  showView("explore");
+  loadExploreGames();
+}
+
+function loadExploreGames() {
+  var url = API_BASE + "/api/games?sort=" + encodeURIComponent(exploreSort);
+  if (exploreSearch) url += "&search=" + encodeURIComponent(exploreSearch);
+  fetch(url, {
+    headers: API_KEY ? { "Authorization": "Bearer " + API_KEY } : {}
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    exploreGames = data.games || [];
+    $("explore-count").textContent = (data.total || 0) + " games";
+    renderExploreGrid();
+  })
+  .catch(function(err) {
+    console.error("Failed to load games:", err);
+    exploreGames = [];
+    $("explore-count").textContent = "";
+    renderExploreGrid();
+  });
+}
+
+function renderExploreGrid() {
+  var grid = $("explore-grid");
+  var empty = $("explore-empty");
+  if (!exploreGames.length) {
+    grid.innerHTML = "";
+    empty.classList.remove("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+  var html = "";
+  for (var i = 0; i < exploreGames.length; i++) {
+    var g = exploreGames[i];
+    var title = escapeHtml(g.title || "Untitled Game");
+    var prompt = escapeHtml(g.prompt || "");
+    var statusClass = g.status === "completed" ? "ready" : "other";
+    var statusLabel = g.status === "completed" ? "Ready" : (g.status || "unknown");
+    var assets = (g.assets_count || g.assetsCount || 0);
+    var created = g.created_at || g.createdAt || "";
+    var gameId = g.game_id || g.id || "";
+    html += "<div class='explore-card'>";
+    html += "  <div class='flex items-start justify-between mb-3'>";
+    html += "    <h3 class='font-heading text-sm font-bold truncate flex-1 mr-2'>" + title + "</h3>";
+    html += "    <span class='explore-status " + statusClass + "'>" + statusLabel + "</span>";
+    html += "  </div>";
+    html += "  <p class='text-gray-400 text-xs line-clamp-2 mb-3'>" + prompt + "</p>";
+    html += "  <div class='flex items-center justify-between'>";
+    html += "    <span class='text-gray-500 text-xs'>";
+    if (created) html += formatTimeAgo(created);
+    if (assets) html += " &middot; " + assets + " assets";
+    html += "</span>";
+    if (g.status === "completed") {
+      var playUrl = API_BASE + "/play/" + encodeURIComponent(gameId);
+      html += "    <button class='text-accent text-xs font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded js-play-btn' data-url='" + playUrl + "'>Play</button>";
+    }
+    html += "  </div>";
+    html += "</div>";
+  }
+  grid.innerHTML = html;
+}
+
+function startGeneration() {
+  var prompt = $("game-prompt").value.trim();
+  if (!prompt) {
+    $("game-prompt").focus();
+    return;
+  }
+  showView("loading");
+  setStep(0);
+  startElapsedTimer();
+
+  fetch(API_BASE + "/api/generate-game", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: prompt })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    setStep(4);
+    stopElapsedTimer();
+    setTimeout(function() {
+      if (data && data.game_id) {
+        currentGameId = data.game_id;
+        $("game-iframe").src = API_BASE + "/play/" + data.game_id;
+        showView("result");
+      } else {
+        alert(data.detail || "Generation failed. Please try again.");
+        showView("landing");
       }
-    };
-    (function() {
-      "use strict";
-      var API_BASE = "";
-      var MAX_CHARS = 2000;
-      function $(id) { return document.getElementById(id); }
-      var sections = { landing: $("landing-section"), loading: $("loading-section"), result: $("result-section") };
-      var els = {
-        prompt: $("prompt-input"), charCount: $("char-count"), genBtn: $("generate-btn"),
-        btnLabel: $("btn-label"), errorMsg: $("error-msg"), errorText: $("error-text"),
-        subtitle: $("loading-subtitle"), eta: $("eta-display"), iframe: $("game-iframe"),
-        gameTitle: $("game-title-display"), shareUrl: $("share-url"), copyBtn: $("copy-btn"),
-        copyLabel: $("copy-label"), copyIcon: $("copy-icon"), fullBtn: $("fullscreen-btn"),
-        newBtn: $("new-game-btn"), toastBox: $("toastContainer"), particles: $("particleField"),
-      };
-      var currentGameId = null, elapsedTimer = null, elapsedSeconds = 0, currentStep = 0;
+    }, 500);
+  })
+  .catch(function(err) {
+    stopElapsedTimer();
+    console.error("Generation error:", err);
+    alert("Network error. Check that the server is running.");
+    showView("landing");
+  });
+}
 
-      var placeholders = [
-        'A 1920s noir detective game where you play as a sentient cat...',
-        'A space roguelike where you collect alien artifacts...',
-        'A cozy farming sim but all the crops are sentient and have opinions...',
-        'A platformer where you play as a glitch in the Matrix...',
-        'A medieval kingdom sim where every NPC has a procedurally generated drama...',
-        'An underwater exploration game with bioluminescent creatures and ancient ruins...',
-      ];
-      var phIdx=0,phCharIdx=0,phDeleting=false,phTimeout=null,phPaused=false;
+function openSettings() {
+  $("settings-overlay").classList.add("open");
+  $("api-key-input").value = API_KEY;
+  $("api-base-input").value = API_BASE;
+  $("api-key-input").focus();
+}
 
-      function cyclePlaceholder() {
-        if(phPaused) return;
-        var target=placeholders[phIdx];
-        if(!phDeleting){
-          phCharIdx++;
-          els.prompt.setAttribute("placeholder",target.substring(0,phCharIdx));
-          if(phCharIdx===target.length){phPaused=true;phTimeout=setTimeout(function(){phPaused=false;phDeleting=true;cyclePlaceholder();},2200);return;}
-          phTimeout=setTimeout(cyclePlaceholder,40+Math.random()*30);
-        }else{
-          phCharIdx--;
-          els.prompt.setAttribute("placeholder",target.substring(0,phCharIdx));
-          if(phCharIdx===0){phDeleting=false;phIdx=(phIdx+1)%placeholders.length;phTimeout=setTimeout(cyclePlaceholder,400);return;}
-          phTimeout=setTimeout(cyclePlaceholder,20);
-        }
+function closeSettings() {
+  $("settings-overlay").classList.remove("open");
+  if ($("landing-section").classList.contains("active")) $("settings-btn").focus();
+}
+
+function saveSettings() {
+  API_KEY = $("api-key-input").value.trim();
+  API_BASE = $("api-base-input").value.trim() || "http://localhost:8080";
+  localStorage.setItem("ir_api_key", API_KEY);
+  localStorage.setItem("ir_api_base", API_BASE);
+  closeSettings();
+}
+
+function toggleApiKeyVisibility() {
+  var inp = $("api-key-input");
+  inp.type = inp.type === "password" ? "text" : "password";
+}
+
+function editGame() {
+  var editInput = $("edit-prompt-input");
+  if (!editInput) return;
+  var prompt = editInput.value.trim();
+  if (!prompt) { editInput.focus(); return; }
+  if (!currentGameId) { alert("No game to edit."); return; }
+
+  var applyBtn = $("edit-apply-btn");
+  applyBtn.disabled = true;
+  applyBtn.textContent = "Editing...";
+  showView("loading");
+  setStep(0);
+  startElapsedTimer();
+
+  fetch(API_BASE + "/api/edit-game", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ game_id: currentGameId, edit_prompt: prompt })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    setStep(4);
+    stopElapsedTimer();
+    setTimeout(function() {
+      if (data && data.game_id) {
+        $("game-iframe").src = API_BASE + "/play/" + data.game_id + "?t=" + Date.now();
+        showView("result");
+        editInput.value = "";
+      } else {
+        alert(data.detail || "Edit failed.");
+        showView("result");
       }
+    }, 500);
+  })
+  .catch(function(err) {
+    stopElapsedTimer();
+    console.error("Edit error:", err);
+    alert("Edit failed. Please try again.");
+    showView("result");
+  })
+  .finally(function() {
+    applyBtn.disabled = false;
+    applyBtn.textContent = "Apply";
+  });
+}
 
-      function showView(name){
-        Object.keys(sections).forEach(function(key){sections[key].classList.remove("active");sections[key].style.display="none";});
-        var target=sections[name];target.style.display="block";void target.offsetWidth;
-        target.classList.add("active");window.scrollTo({top:0,behavior:"smooth"});
-      }
+function bindEvents() {
+  $("generate-btn").addEventListener("click", startGeneration);
+  $("game-prompt").addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); startGeneration(); }
+  });
 
-      function showError(msg){els.errorText.textContent=msg;els.errorMsg.classList.remove("hidden");}
-      function hideError(){els.errorMsg.classList.add("hidden");}
+  $("explore-btn").addEventListener("click", showExplore);
+  $("explore-back-btn").addEventListener("click", function() { showView("landing"); });
+  $("explore-search").addEventListener("input", function() {
+    var val = this.value;
+    clearTimeout(_searchTimeout);
+    _searchTimeout = setTimeout(function() {
+      exploreSearch = val;
+      loadExploreGames();
+    }, 300);
+  });
+  $("explore-sort").addEventListener("change", function() {
+    exploreSort = this.value;
+    loadExploreGames();
+  });
 
-      function showToast(message,type){
-        type=type||"success";
-        var toast=document.createElement("div");
-        toast.className="toast toast-"+type;
-        var checkSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-        var errSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
-        var iconSvg=(type==="success") ? checkSvg : errSvg;
-        toast.innerHTML=iconSvg+"<span>"+message+"</span>";
-        els.toastBox.appendChild(toast);
-        setTimeout(function(){toast.classList.add("removing");setTimeout(function(){toast.remove();},300);},4000);
-      }
+  $("back-btn").addEventListener("click", function() { showView("landing"); });
+  $("edit-btn").addEventListener("click", function() {
+    var panel = $("edit-prompt-input");
+    if (panel) {
+      panel.parentElement.parentElement.classList.toggle("hidden");
+      if (!panel.parentElement.parentElement.classList.contains("hidden")) panel.focus();
+    }
+  });
+  $("edit-apply-btn").addEventListener("click", editGame);
+  $("edit-prompt-input").addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); editGame(); }
+  });
+  $("share-btn").addEventListener("click", function() {
+    if (navigator.clipboard) navigator.clipboard.writeText(window.location.origin + "/play/" + currentGameId);
+    alert("Link copied!");
+  });
 
-      function updateCharCount(){
-        var len=els.prompt.value.length;
-        els.charCount.textContent=len+"/"+MAX_CHARS;
-        els.charCount.classList.remove("near-limit","at-limit");
-        if(len>=MAX_CHARS)els.charCount.classList.add("at-limit");
-        else if(len>=MAX_CHARS*0.85)els.charCount.classList.add("near-limit");
-      }
+  $("settings-btn").addEventListener("click", openSettings);
+  $("settings-close").addEventListener("click", closeSettings);
+  $("settings-save").addEventListener("click", saveSettings);
+  $("api-key-toggle").addEventListener("click", toggleApiKeyVisibility);
+  $("settings-overlay").addEventListener("click", function(e) {
+    if (e.target === this) closeSettings();
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && $("settings-overlay").classList.contains("open")) closeSettings();
+  });
 
-      var stepData=[
-        {id:0,title:"Director Agent",desc:"Drafting game design document..."},
-        {id:1,title:"Asset Agent",desc:"Generating images and audio..."},
-        {id:2,title:"Engineer Agent",desc:"Writing Phaser.js game code..."},
-        {id:3,title:"Assembler Agent",desc:"Bundling the final game..."},
-      ];
+  $("explore-grid").addEventListener("click", function(e) {
+    var btn = e.target.closest(".js-play-btn");
+    if (btn) window.open(btn.getAttribute("data-url"), "_blank");
+  });
+}
 
-      var checkSvgSmall = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#0a0a1a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+function initParticles() {
+  var container = document.querySelector(".hero-glow");
+  if (!container) return;
+  for (var i = 0; i < 20; i++) {
+    var p = document.createElement("div");
+    p.className = "particle";
+    p.style.left = Math.random() * 100 + "%";
+    p.style.top = Math.random() * 100 + "%";
+    p.style.animationDelay = Math.random() * 8 + "s";
+    p.style.animationDuration = (5 + Math.random() * 5) + "s";
+    container.appendChild(p);
+  }
+}
 
-      function activateStep(idx){
-        if(idx>3)return;
-        currentStep=idx;
-        var i,dot,inner,line,title;
-        for(i=0;i<idx;i++){
-          dot=$("dot-"+i);inner=$("dot-inner-"+i);line=$("line-"+i);title=$("step-title-"+i);
-          dot.classList.remove("active");dot.classList.add("complete");
-          dot.setAttribute("aria-label",stepData[i].title+" - complete");
-          dot.querySelectorAll(".sparkle").forEach(function(s){s.remove();});
-          inner.className="";
-          inner.innerHTML=checkSvgSmall;
-          if(line)line.style.height="100%";
-          title.classList.remove("text-text-secondary");title.classList.add("text-success");
-        }
-        if(idx<=3){
-          dot=$("dot-"+idx);inner=$("dot-inner-"+idx);title=$("step-title-"+idx);
-          dot.classList.add("active");dot.setAttribute("aria-label",stepData[idx].title+" - in progress");
-          if(!dot.querySelector(".sparkle")){
-            for(var s=0;s<4;s++){var sp=document.createElement("div");sp.className="sparkle";sp.setAttribute("aria-hidden","true");dot.appendChild(sp);}
-          }
-          inner.className="";inner.classList.add("w-2.5","h-2.5","rounded-full","bg-accent");
-          title.classList.remove("text-text-secondary");title.classList.add("text-accent");
-          for(var j2=idx+1;j2<=3;j2++){var t=$("step-title-"+j2);t.classList.remove("text-success","text-accent");t.classList.add("text-text-secondary");}
-        }
-        els.eta.textContent="0:00";
-      }
+bindEvents();
+initParticles();
 
-      function completeAllSteps(){
-        stopElapsedTimer();
-        for(var i=0;i<=3;i++){
-          var dot=$("dot-"+i),inner=$("dot-inner-"+i),line=$("line-"+i),title=$("step-title-"+i);
-          dot.classList.remove("active");dot.classList.add("complete");
-          dot.setAttribute("aria-label",stepData[i].title+" - complete");
-          dot.querySelectorAll(".sparkle").forEach(function(s){s.remove();});
-          inner.className="";
-          inner.innerHTML=checkSvgSmall;
-          if(line)line.style.height="100%";
-          title.classList.remove("text-text-secondary","text-accent");title.classList.add("text-success");
-        }
-        els.subtitle.textContent="Game generated successfully!";
-      }
-
-      function resetStepper(){
-        currentStep=0;
-        for(var i=0;i<=3;i++){
-          var dot=$("dot-"+i),inner=$("dot-inner-"+i),line=$("line-"+i),title=$("step-title-"+i);
-          dot.className="step-dot";dot.setAttribute("aria-label",stepData[i].title+" - pending");
-          inner.className="w-2.5 h-2.5 rounded-full bg-border";inner.innerHTML="";
-          if(line)line.style.height="0";
-          title.className="font-orbitron text-sm font-semibold tracking-wide";
-          title.classList.add(i===0?"text-text-primary":"text-text-secondary");
-          dot.querySelectorAll(".sparkle").forEach(function(s){s.remove();});
-        }
-        var d0=$("dot-0");d0.classList.add("active");
-        for(var s2=0;s2<4;s2++){var sp2=document.createElement("div");sp2.className="sparkle";sp2.setAttribute("aria-hidden","true");d0.appendChild(sp2);}
-        $("dot-inner-0").className="w-2.5 h-2.5 rounded-full bg-accent";
-        els.subtitle.textContent="Your game is being crafted by our AI agents...";
-      }
-
-      function startElapsedTimer(){
-        elapsedSeconds=0;
-        updateElapsedDisplay();
-        elapsedTimer=setInterval(function(){elapsedSeconds++;updateElapsedDisplay();},1000);
-      }
-
-      function stopElapsedTimer(){if(elapsedTimer){clearInterval(elapsedTimer);elapsedTimer=null;}}
-
-      function updateElapsedDisplay(){
-        var mins=Math.floor(elapsedSeconds/60);
-        var secs=elapsedSeconds%60;
-        els.eta.textContent=mins+":"+(secs<10?"0":"")+secs;
-      }
-
-      async function generateGame(){
-        hideError();
-        var prompt=els.prompt.value.trim();
-        if(!prompt){showError("Please enter a game idea before generating.");els.prompt.focus();return;}
-        els.genBtn.disabled=true;showView("loading");resetStepper();startElapsedTimer();activateStep(0);
-        try{
-          var resp=await fetch(API_BASE+"/api/generate-game",{
-            method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({prompt:prompt}),
-          });
-          if(!resp.ok){var err=await resp.json().catch(function(){return{detail:"Unknown error"};});throw new Error(err.detail||"Server error "+resp.status);}
-          var data=await resp.json();currentGameId=data.game_id;
-          completeAllSteps();
-          await new Promise(function(r){setTimeout(r,600);});stopElapsedTimer();
-          els.iframe.src=API_BASE+"/play/"+data.game_id;
-          els.shareUrl.textContent=window.location.origin+"/play/"+data.game_id;
-          showView("result");showToast("Your game is ready! Have fun!","success");
-        }catch(e){stopElapsedTimer();showView("landing");showError(e.message||"Generation failed. Please try again.");showToast("Generation failed. Please try again.","error");}
-        finally{els.genBtn.disabled=false;}
-      }
-
-      function resetUI(){
-        els.prompt.value="";updateCharCount();hideError();els.iframe.src="";
-        currentGameId=null;resetStepper();showView("landing");els.prompt.focus();
-      }
-
-      function copyLink(){
-        var url=window.location.origin+"/play/"+currentGameId;
-        navigator.clipboard.writeText(url).then(function(){
-          els.copyLabel.textContent="Copied!";els.copyBtn.classList.add("copied");
-          els.copyIcon.innerHTML='<polyline points="20 6 9 17 4 12"></polyline>';
-          showToast("Link copied to clipboard!","success");
-          setTimeout(function(){els.copyLabel.textContent="Copy";els.copyBtn.classList.remove("copied");els.copyIcon.innerHTML='<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>';},2000);
-        }).catch(function(){showToast("Failed to copy link.","error");});
-      }
-
-      async function editGame() {
-        var editInput = document.getElementById("edit-prompt-input");
-        var editBtn = document.getElementById("edit-btn");
-        var editError = document.getElementById("edit-error-msg");
-        var prompt = editInput.value.trim();
-        
-        if (!prompt) {
-          editError.textContent = "Please enter edit instructions.";
-          editError.classList.remove("hidden");
-          return;
-        }
-        if (!currentGameId) {
-          editError.textContent = "No game to edit.";
-          editError.classList.remove("hidden");
-          return;
-        }
-        
-        editError.classList.add("hidden");
-        editBtn.disabled = true;
-        editBtn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;"></span> Editing...';
-        
-        // Show loading state
-        showView("loading");
-        resetStepper();
-        activateStep(0);
-        startElapsedTimer();
-        setTimeout(function() { if (sections.loading.classList.contains("active")) activateStep(2); }, 5000);
-        
-        try {
-          var resp = await fetch(API_BASE + "/api/edit-game", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ game_id: currentGameId, edit_prompt: prompt }),
-          });
-          if (!resp.ok) {
-            var err = await resp.json().catch(function() { return { detail: "Unknown error" }; });
-            throw new Error(err.detail || "Server error " + resp.status);
-          }
-          var data = await resp.json();
-          completeAllSteps();
-          await new Promise(function(r) { setTimeout(r, 600); });
-          stopElapsedTimer();
-          
-          // Reload the iframe with cache bust
-          els.iframe.src = API_BASE + "/play/" + data.game_id + "?t=" + Date.now();
-          showView("result");
-          showToast("Game updated!", "success");
-          editInput.value = "";
-        } catch (e) {
-          stopElapsedTimer();
-          showView("result");
-          editError.textContent = e.message || "Edit failed. Please try again.";
-          editError.classList.remove("hidden");
-          showToast("Edit failed: " + (e.message || "Unknown error"), "error");
-        } finally {
-          editBtn.disabled = false;
-          editBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline></svg> Apply';
-        }
-      }
-
-      function initParticles(){
-        var container=els.particles,count=window.innerWidth<640?25:50;
-        for(var i=0;i<count;i++){
-          var p=document.createElement("div");p.className="particle";
-          var size=Math.random()*3+1,colors=["#e94560","#0f3460","#00ff88","#8888aa"];
-          var color=colors[Math.floor(Math.random()*colors.length)];
-          p.style.width=size+"px";p.style.height=size+"px";p.style.left=(Math.random()*100)+"%";
-          p.style.background=color;p.style.boxShadow="0 0 "+(size*3)+"px "+color;
-          p.style.animationDuration=(Math.random()*15+10)+"s";p.style.animationDelay=(Math.random()*15)+"s";
-          container.appendChild(p);
-        }
-      }
-
-      function bindEvents(){
-        els.prompt.addEventListener("input",updateCharCount);
-        els.prompt.addEventListener("focus",function(){phPaused=true;});
-        els.prompt.addEventListener("blur",function(){if(!els.prompt.value){phPaused=false;phDeleting=false;phCharIdx=0;els.prompt.setAttribute("placeholder","");}});
-        els.genBtn.addEventListener("click",generateGame);
-        els.newBtn.addEventListener("click",resetUI);
-        els.copyBtn.addEventListener("click",copyLink);
-        els.fullBtn.addEventListener("click",function(){if(currentGameId){window.open(API_BASE+"/play/"+currentGameId,"_blank");}});
-        els.prompt.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();generateGame();}});
-        /* Settings panel events */
-        settingsGearBtn.addEventListener("click", openSettings);
-        settingsCloseBtn.addEventListener("click", closeSettings);
-        settingsOverlay.addEventListener("click", closeSettings);
-        settingsSaveBtn.addEventListener("click", saveConfig);
-        var toggleBtns = document.querySelectorAll(".password-toggle");
-        for (var i = 0; i < toggleBtns.length; i++) {
-          toggleBtns[i].addEventListener("click", function() {
-            togglePasswordVisibility(this.getAttribute("data-target"));
-          });
-        }
-        document.addEventListener("keydown", function(e) {
-          if (e.key === "Escape" && settingsPanelOpen) { closeSettings(); }
-          trapFocus(e);
-        });
-
-        var editBtn = document.getElementById("edit-btn");
-        var editInput = document.getElementById("edit-prompt-input");
-        if (editBtn) {
-          editBtn.addEventListener("click", editGame);
-        }
-        if (editInput) {
-          editInput.addEventListener("keydown", function(e) {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              editGame();
-            }
-          });
-        }
-
-      }
-
-      
-      /* ===== SETTINGS PANEL LOGIC ===== */
-      var settingsPanel, settingsOverlay, settingsCloseBtn, settingsGearBtn, settingsSaveBtn, settingsBadge;
-      var settingsPanelOpen = false;
-      var previouslyFocusedElement = null;
-
-      var apiFields = {
-        llm: { baseUrl: document.getElementById("llm-base-url"), apiKey: document.getElementById("llm-api-key"), model: document.getElementById("llm-model"), dot: document.getElementById("llm-dot"), badge: document.getElementById("llm-badge") },
-        image: { baseUrl: document.getElementById("image-base-url"), apiKey: document.getElementById("image-api-key"), model: document.getElementById("image-model"), dot: document.getElementById("image-dot"), badge: document.getElementById("image-badge") },
-        audio: { baseUrl: document.getElementById("audio-base-url"), apiKey: document.getElementById("audio-api-key"), model: document.getElementById("audio-model"), dot: document.getElementById("audio-dot"), badge: document.getElementById("audio-badge") },
-      };
-      var MASKED = "••••••••";
-
-      function getSettingsFocusable() {
-        return Array.prototype.slice.call(settingsPanel.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'));
-      }
-
-      function trapFocus(e) {
-        if (!settingsPanelOpen) return;
-        var focusable = getSettingsFocusable();
-        if (focusable.length === 0) return;
-        var firstEl = focusable[0];
-        var lastEl = focusable[focusable.length - 1];
-        if (e.key === "Tab") {
-          if (e.shiftKey) {
-            if (document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
-          } else {
-            if (document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }
-          }
-        }
-      }
-
-      function openSettings() {
-        previouslyFocusedElement = document.activeElement;
-        settingsPanelOpen = true;
-        settingsOverlay.classList.add("open");
-        settingsPanel.classList.add("open");
-        settingsOverlay.setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
-        loadConfig();
-        setTimeout(function() { settingsCloseBtn.focus(); }, 100);
-      }
-
-      function closeSettings() {
-        settingsPanelOpen = false;
-        settingsOverlay.classList.remove("open");
-        settingsPanel.classList.remove("open");
-        settingsOverlay.setAttribute("aria-hidden", "true");
-        document.body.style.overflow = "";
-        if (previouslyFocusedElement && previouslyFocusedElement.focus) { previouslyFocusedElement.focus(); }
-      }
-
-      function updateApiStatus(apiKey, configured) {
-        var fields = apiFields[apiKey];
-        if (!fields) return;
-        if (configured) {
-          fields.dot.className = "api-dot configured";
-          fields.badge.className = "api-badge set";
-          fields.badge.textContent = "SET";
-        } else {
-          fields.dot.className = "api-dot unconfigured";
-          fields.badge.className = "api-badge not-set";
-          fields.badge.textContent = "NOT SET";
-        }
-      }
-
-      function updateBadge(config) {
-        var notConfigured = 0;
-        if (!config.apis) return;
-        var keys = Object.keys(config.apis);
-        for (var i = 0; i < keys.length; i++) {
-          if (!config.apis[keys[i]].configured) notConfigured++;
-        }
-        if (notConfigured > 0) {
-          settingsBadge.textContent = notConfigured;
-          settingsBadge.classList.remove("hidden");
-        } else {
-          settingsBadge.classList.add("hidden");
-        }
-      }
-
-      function applyConfigToFields(config) {
-        apiFields.llm.baseUrl.value = config.llm_base_url || "";
-        apiFields.llm.apiKey.value = "";
-        apiFields.llm.apiKey.placeholder = config.llm_configured ? MASKED : "";
-        apiFields.llm.model.value = config.llm_model || "";
-        updateApiStatus("llm", config.llm_configured);
-        apiFields.image.baseUrl.value = config.image_api_url || "";
-        apiFields.image.apiKey.value = "";
-        apiFields.image.apiKey.placeholder = config.image_configured ? MASKED : "";
-        apiFields.image.model.value = config.image_model || "";
-        updateApiStatus("image", config.image_configured);
-        apiFields.audio.baseUrl.value = config.audio_api_url || "";
-        apiFields.audio.apiKey.value = "";
-        apiFields.audio.apiKey.placeholder = config.audio_configured ? MASKED : "";
-        apiFields.audio.model.value = config.audio_model || "";
-        updateApiStatus("audio", config.audio_configured);
-        updateBadge(config);
-      }
-
-      async function loadConfig() {
-        try {
-          var resp = await fetch(API_BASE + "/api/config");
-          if (!resp.ok) throw new Error("Failed to load config");
-          var config = await resp.json();
-          applyConfigToFields(config);
-        } catch (e) {
-          showToast("Could not load current configuration.", "error");
-        }
-      }
-
-      async function saveConfig() {
-        var payload = {};
-        var llmUrl = apiFields.llm.baseUrl.value.trim();
-        var llmKey = apiFields.llm.apiKey.value.trim();
-        var llmModel = apiFields.llm.model.value.trim();
-        if (llmUrl) payload.llm_base_url = llmUrl;
-        if (llmKey && llmKey !== MASKED) payload.llm_api_key = llmKey;
-        if (llmModel) payload.llm_model = llmModel;
-        var imgUrl = apiFields.image.baseUrl.value.trim();
-        var imgKey = apiFields.image.apiKey.value.trim();
-        var imgModel = apiFields.image.model.value.trim();
-        if (imgUrl) payload.image_api_url = imgUrl;
-        if (imgKey && imgKey !== MASKED) payload.image_api_key = imgKey;
-        if (imgModel) payload.image_model = imgModel;
-        var audUrl = apiFields.audio.baseUrl.value.trim();
-        var audKey = apiFields.audio.apiKey.value.trim();
-        var audModel = apiFields.audio.model.value.trim();
-        if (audUrl) payload.audio_api_url = audUrl;
-        if (audKey && audKey !== MASKED) payload.audio_api_key = audKey;
-        if (audModel) payload.audio_model = audModel;
-        settingsSaveBtn.disabled = true;
-        settingsSaveBtn.innerHTML = '<span class="spinner"></span> Saving...';
-        try {
-          var resp = await fetch(API_BASE + "/api/config", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          if (!resp.ok) throw new Error("Failed to save configuration");
-          var config = await resp.json();
-          applyConfigToFields(config);
-          showToast("Configuration saved successfully!", "success");
-        } catch (e) {
-          showToast("Failed to save configuration. Please try again.", "error");
-        } finally {
-          settingsSaveBtn.disabled = false;
-          settingsSaveBtn.textContent = "Save Configuration";
-        }
-      }
-
-      function togglePasswordVisibility(targetId) {
-        var input = document.getElementById(targetId);
-        if (!input) return;
-        var wrapper = input.closest(".password-wrapper");
-        var eyeOpen = wrapper.querySelector(".eye-open");
-        var eyeClosed = wrapper.querySelector(".eye-closed");
-        if (input.type === "password") {
-          input.type = "text";
-          eyeOpen.classList.add("hidden");
-          eyeClosed.classList.remove("hidden");
-        } else {
-          input.type = "password";
-          eyeOpen.classList.remove("hidden");
-          eyeClosed.classList.add("hidden");
-        }
-      }
-
-      /* ===== END SETTINGS PANEL LOGIC ===== */
-
-function init(){
-        settingsPanel = document.getElementById("settings-panel");
-        settingsOverlay = document.getElementById("settings-overlay");
-        settingsCloseBtn = document.getElementById("settings-close-btn");
-        settingsGearBtn = document.getElementById("settings-gear-btn");
-        settingsSaveBtn = document.getElementById("settings-save-btn");
-        settingsBadge = document.getElementById("settings-badge");
-        showView("landing");initParticles();bindEvents();cyclePlaceholder();updateCharCount();
-      }
-      if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}
-    })();
-  </script>
+})();
+</script>
 </body>
 </html>
