@@ -55,6 +55,9 @@ body { font-family: "Inter", sans-serif; background: #0a0a1a; color: #fff; min-h
 </head>
 <body>
 <div id="app" class="relative">
+<button id="settings-btn" class="fixed top-4 right-4 p-2 rounded-lg hover:bg-white/10 transition z-[999]" aria-label="Settings" style="background: rgba(26,26,62,0.8); border: 1px solid rgba(255,255,255,0.1);">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+</button>
 <!-- Landing Section -->
 <section id="landing-section" class="view-section active">
 <div class="hero-glow"></div>
@@ -73,9 +76,6 @@ Explore Games
 </div>
 </div>
 </div>
-<button id="settings-btn" class="absolute top-6 right-6 p-2 rounded-lg hover:bg-white/5 transition" aria-label="Settings">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-</button>
 </section>
 <!-- Loading Section -->
 <section id="loading-section" class="view-section">
@@ -166,8 +166,17 @@ Back to Home
 <button id="settings-close" class="absolute top-4 right-4 text-gray-400 hover:text-white" aria-label="Close settings">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
 </button>
-<h3 class="font-heading text-xl font-bold mb-6">SETTINGS</h3>
+<h3 class="font-heading text-xl font-bold mb-2">SETTINGS</h3>
+<p class="text-gray-500 text-xs mb-6">Configure your AI model connection</p>
 <label class="block mb-4">
+<span class="text-gray-400 text-sm mb-1 block">API Base URL</span>
+<input id="api-base-input" type="text" class="w-full bg-[#1a1a3e] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent" placeholder="https://api.openai.com/v1">
+</label>
+<label class="block mb-4">
+<span class="text-gray-400 text-sm mb-1 block">Model</span>
+<input id="api-model-input" type="text" class="w-full bg-[#1a1a3e] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent" placeholder="gpt-4o">
+</label>
+<label class="block mb-6">
 <span class="text-gray-400 text-sm mb-1 block">API Key</span>
 <div class="relative">
 <input id="api-key-input" type="password" class="w-full bg-[#1a1a3e] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent pr-10" placeholder="Enter your API key">
@@ -175,10 +184,6 @@ Back to Home
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
 </button>
 </div>
-</label>
-<label class="block mb-6">
-<span class="text-gray-400 text-sm mb-1 block">API Base URL</span>
-<input id="api-base-input" type="text" class="w-full bg-[#1a1a3e] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-accent" placeholder="http://localhost:8080">
 </label>
 <button id="settings-save" class="gradient-btn w-full text-sm py-3">Save Settings</button>
 </div>
@@ -192,7 +197,7 @@ Back to Home
 var $ = function(id) { return document.getElementById(id); };
 
 var API_BASE = "";
-var API_KEY = localStorage.getItem("ir_api_key") || "";
+var API_KEY = "";
 
 var sections = {
   landing: $("landing-section"),
@@ -373,9 +378,14 @@ function startGeneration() {
 
 function openSettings() {
   $("settings-overlay").classList.add("open");
-  $("api-key-input").value = API_KEY;
-  $("api-base-input").value = API_BASE;
   $("api-key-input").focus();
+  // Load current config from backend
+  fetch("/api/config").then(function(r) { return r.json(); }).then(function(cfg) {
+    $("api-base-input").value = cfg.llm_base_url || "";
+    $("api-model-input").value = cfg.llm_model || "";
+    $("api-key-input").value = "";
+    $("api-key-input").placeholder = cfg.llm_configured ? "•••••••• (configured)" : "Enter your API key";
+  }).catch(function() {});
 }
 
 function closeSettings() {
@@ -384,11 +394,33 @@ function closeSettings() {
 }
 
 function saveSettings() {
-  API_KEY = $("api-key-input").value.trim();
-  API_BASE = $("api-base-input").value.trim() || "http://localhost:8080";
-  localStorage.setItem("ir_api_key", API_KEY);
-  localStorage.setItem("ir_api_base", API_BASE);
-  closeSettings();
+  var payload = {};
+  var baseUrl = $("api-base-input").value.trim();
+  var model = $("api-model-input").value.trim();
+  var apiKey = $("api-key-input").value.trim();
+  if (baseUrl) payload.llm_base_url = baseUrl;
+  if (model) payload.llm_model = model;
+  if (apiKey && apiKey !== "•••••••• (configured)") payload.llm_api_key = apiKey;
+  
+  var saveBtn = $("settings-save");
+  saveBtn.textContent = "Saving...";
+  saveBtn.disabled = true;
+  
+  fetch("/api/config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).then(function(r) { return r.json(); }).then(function(cfg) {
+    saveBtn.textContent = "Saved!";
+    setTimeout(function() { saveBtn.textContent = "Save Settings"; saveBtn.disabled = false; }, 1500);
+    // Show toast
+    showToast("Settings saved successfully!", "success");
+    setTimeout(closeSettings, 800);
+  }).catch(function(e) {
+    saveBtn.textContent = "Save Settings";
+    saveBtn.disabled = false;
+    showToast("Failed to save settings", "error");
+  });
 }
 
 function toggleApiKeyVisibility() {
