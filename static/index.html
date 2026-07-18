@@ -51,6 +51,13 @@ body { font-family: "Inter", sans-serif; background: #0a0a1a; color: #fff; min-h
 .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; }
 .settings-overlay.open { display: flex; }
 .settings-panel { background: #12122a; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 32px; width: 90%; max-width: 440px; position: relative; }
+#cmd-palette-overlay { display: none; }
+#cmd-palette-overlay.open { display: flex; }
+.cmd-item { padding: 8px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s; }
+.cmd-item:hover, .cmd-item.active { background: rgba(233,69,96,0.15); }
+.cmd-item .cmd-icon { width: 20px; text-align: center; color: #8888aa; }
+.cmd-item .cmd-label { font-size: 14px; color: #e0e0ff; }
+.cmd-item .cmd-shortcut { font-size: 11px; color: #555577; margin-left: auto; font-family: monospace; }
 </style>
 </head>
 <body>
@@ -188,6 +195,14 @@ Back to Home
 <button id="settings-save" class="gradient-btn w-full text-sm py-3">Save Settings</button>
 </div>
 </div>
+<!-- Command Palette -->
+<div id="cmd-palette-overlay" class="settings-overlay" style="z-index:200;">
+<div class="settings-panel" style="max-width:480px;top:20%;height:auto;border-radius:16px;">
+<div class="p-4">
+<input type="text" id="cmd-input" placeholder="Type a command..." class="w-full bg-[#1a1a3e] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#e94560] mb-3" autofocus>
+<div id="cmd-results" class="space-y-1 max-h-64 overflow-y-auto"></div>
+</div>
+</div>
 </div>
 </div>
 <script>
@@ -256,6 +271,16 @@ var exploreSort = "newest";
 var exploreSearch = "";
 var _searchTimeout = null;
 
+var cmdPaletteOpen = false;
+var cmdActiveIndex = 0;
+var cmdItems = [
+  { icon: "\u26A1", label: "Generate Game", shortcut: "", action: function() { closeCmdPalette(); $("game-prompt").focus(); } },
+  { icon: "\uD83D\uDD0D", label: "Explore Games", shortcut: "", action: function() { closeCmdPalette(); showExplore(); } },
+  { icon: "\u2699\uFE0F", label: "Settings", shortcut: "", action: function() { closeCmdPalette(); openSettings(); } },
+  { icon: "\uD83C\uDFAE", label: "Play Last Game", shortcut: "", action: function() { closeCmdPalette(); if (currentGameId) window.open("/play/" + currentGameId, "_blank"); } },
+  { icon: "\uD83C\uDFE0", label: "Back to Home", shortcut: "Esc", action: function() { closeCmdPalette(); showView("landing"); } }
+];
+
 function escapeHtml(str) {
   var div = document.createElement("div");
   div.textContent = str;
@@ -318,6 +343,9 @@ function renderExploreGrid() {
     var created = g.created_at || g.createdAt || "";
     var gameId = g.game_id || g.id || "";
     html += "<div class='explore-card'>";
+    html += "  <div class='h-24 rounded-lg mb-3 overflow-hidden bg-[#0a0a1a] flex items-center justify-center'>";
+    html += "    <img src='/play/" + gameId + "/thumb' onerror=\"this.style.display='none'\" class='w-full h-full object-cover' loading='lazy'>";
+    html += "  </div>";
     html += "  <div class='flex items-start justify-between mb-3'>";
     html += "    <h3 class='font-heading text-sm font-bold truncate flex-1 mr-2'>" + title + "</h3>";
     html += "    <span class='explore-status " + statusClass + "'>" + statusLabel + "</span>";
@@ -362,6 +390,8 @@ function startGeneration() {
         currentGameId = data.game_id;
         $("game-iframe").src = API_BASE + "/play/" + data.game_id;
         showView("result");
+        setTimeout(function() { captureThumbnail(data.game_id); }, 3000);
+        saveVersion(data.game_id, $("game-prompt").value.trim());
       } else {
         alert(data.detail || "Generation failed. Please try again.");
         showView("landing");
@@ -379,12 +409,11 @@ function startGeneration() {
 function openSettings() {
   $("settings-overlay").classList.add("open");
   $("api-key-input").focus();
-  // Load current config from backend
   fetch("/api/config").then(function(r) { return r.json(); }).then(function(cfg) {
     $("api-base-input").value = cfg.llm_base_url || "";
     $("api-model-input").value = cfg.llm_model || "";
     $("api-key-input").value = "";
-    $("api-key-input").placeholder = cfg.llm_configured ? "•••••••• (configured)" : "Enter your API key";
+    $("api-key-input").placeholder = cfg.llm_configured ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (configured)" : "Enter your API key";
   }).catch(function() {});
 }
 
@@ -400,12 +429,12 @@ function saveSettings() {
   var apiKey = $("api-key-input").value.trim();
   if (baseUrl) payload.llm_base_url = baseUrl;
   if (model) payload.llm_model = model;
-  if (apiKey && apiKey !== "•••••••• (configured)") payload.llm_api_key = apiKey;
-  
+  if (apiKey && apiKey !== "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (configured)") payload.llm_api_key = apiKey;
+
   var saveBtn = $("settings-save");
   saveBtn.textContent = "Saving...";
   saveBtn.disabled = true;
-  
+
   fetch("/api/config", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -413,7 +442,6 @@ function saveSettings() {
   }).then(function(r) { return r.json(); }).then(function(cfg) {
     saveBtn.textContent = "Saved!";
     setTimeout(function() { saveBtn.textContent = "Save Settings"; saveBtn.disabled = false; }, 1500);
-    // Show toast
     showToast("Settings saved successfully!", "success");
     setTimeout(closeSettings, 800);
   }).catch(function(e) {
@@ -474,6 +502,77 @@ function editGame() {
   });
 }
 
+function openCmdPalette() {
+  cmdPaletteOpen = true;
+  var overlay = $("cmd-palette-overlay");
+  overlay.classList.add("open");
+  var input = $("cmd-input");
+  input.value = "";
+  input.focus();
+  renderCmdResults("");
+}
+
+function closeCmdPalette() {
+  cmdPaletteOpen = false;
+  $("cmd-palette-overlay").classList.remove("open");
+}
+
+function renderCmdResults(query) {
+  var results = $("cmd-results");
+  var filtered = cmdItems.filter(function(item) {
+    return !query || item.label.toLowerCase().includes(query.toLowerCase());
+  });
+  cmdActiveIndex = 0;
+  results.innerHTML = filtered.map(function(item, i) {
+    return '<div class="cmd-item' + (i === 0 ? ' active' : '') + '" data-index="' + i + '">' +
+      '<span class="cmd-icon">' + item.icon + '</span>' +
+      '<span class="cmd-label">' + item.label + '</span>' +
+      (item.shortcut ? '<span class="cmd-shortcut">' + item.shortcut + '</span>' : '') +
+      '</div>';
+  }).join('');
+
+  results.querySelectorAll(".cmd-item").forEach(function(el) {
+    el.addEventListener("click", function() {
+      var idx = parseInt(this.dataset.index);
+      filtered[idx].action();
+    });
+  });
+}
+
+function captureThumbnail(gameId) {
+  try {
+    var iframe = $("game-iframe");
+    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    var canvas = iframeDoc.querySelector("canvas");
+    if (canvas) {
+      var thumbCanvas = document.createElement("canvas");
+      thumbCanvas.width = 320;
+      thumbCanvas.height = 200;
+      var ctx = thumbCanvas.getContext("2d");
+      ctx.drawImage(canvas, 0, 0, 320, 200);
+      return thumbCanvas.toDataURL("image/jpeg", 0.7);
+    }
+  } catch(e) {
+    // Cross-origin or canvas not ready
+  }
+  return null;
+}
+
+function saveVersion(gameId, description) {
+  var versions = JSON.parse(localStorage.getItem("ir_versions_" + gameId) || "[]");
+  versions.push({
+    id: versions.length + 1,
+    gameId: gameId,
+    description: description || "Version " + (versions.length + 1),
+    timestamp: new Date().toISOString()
+  });
+  localStorage.setItem("ir_versions_" + gameId, JSON.stringify(versions));
+}
+
+function getVersions(gameId) {
+  return JSON.parse(localStorage.getItem("ir_versions_" + gameId) || "[]");
+}
+
 function bindEvents() {
   $("generate-btn").addEventListener("click", startGeneration);
   $("game-prompt").addEventListener("keydown", function(e) {
@@ -527,6 +626,30 @@ function bindEvents() {
     var btn = e.target.closest(".js-play-btn");
     if (btn) window.open(btn.getAttribute("data-url"), "_blank");
   });
+
+  // Command Palette bindings
+  document.addEventListener("keydown", function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      if (cmdPaletteOpen) closeCmdPalette();
+      else openCmdPalette();
+    }
+    if (cmdPaletteOpen && e.key === "Escape") closeCmdPalette();
+    if (cmdPaletteOpen && e.key === "Enter") {
+      var active = document.querySelector(".cmd-item.active");
+      if (active) active.click();
+    }
+    if (cmdPaletteOpen && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault();
+      var items = document.querySelectorAll(".cmd-item");
+      items[cmdActiveIndex].classList.remove("active");
+      cmdActiveIndex = e.key === "ArrowDown" ? Math.min(cmdActiveIndex + 1, items.length - 1) : Math.max(cmdActiveIndex - 1, 0);
+      items[cmdActiveIndex].classList.add("active");
+      items[cmdActiveIndex].scrollIntoView({ block: "nearest" });
+    }
+  });
+  $("cmd-input").addEventListener("input", function() { renderCmdResults(this.value); });
+  $("cmd-palette-overlay").addEventListener("click", function(e) { if (e.target === this) closeCmdPalette(); });
 }
 
 function initParticles() {

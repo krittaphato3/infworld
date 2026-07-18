@@ -29,11 +29,15 @@ class GameDesignDocument(BaseModel):
 
     title: str
     premise: str
+    genre: str = "platformer"
     mechanics: list[str]
     controls: str
     win_condition: str
     loss_condition: str
     assets: list[AssetRequirement]
+    color_palette: list[str] = ["#e94560", "#0f3460", "#00ff88"]
+    difficulty_curve: str = "gradual"
+    game_feel_notes: str = ""
     canvas_width: int = 800
     canvas_height: int = 600
     background_color: str = "#2d2d2d"

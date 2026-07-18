@@ -1,4 +1,4 @@
-"""Orchestrates the four-agent sequential pipeline."""
+"""Orchestrates the multi-pass game generation pipeline."""
 
 from __future__ import annotations
 
@@ -9,8 +9,9 @@ from datetime import datetime
 
 from models import GameState, GamePrompt
 from agents.director import DirectorAgent
-from agents.asset import AssetAgent
+from agents.architect import ArchitectAgent
 from agents.engineer import EngineerAgent
+from agents.validator import ValidatorAgent
 from agents.assembler import AssemblerAgent
 from config import settings
 
@@ -36,34 +37,37 @@ def _save_meta(state: GameState) -> None:
 
 
 async def run_pipeline(prompt: GamePrompt) -> GameState:
-    """Run all four agents in sequence and return the final game state."""
+    """Run the 5-stage pipeline: Director -> Architect -> Engineer -> Validator -> Assembler."""
     game_id = str(uuid.uuid4())[:8]
     state = GameState(game_id=game_id, prompt=prompt.prompt, status="running", created_at=datetime.now().isoformat())
     games[game_id] = state
 
-    agents = [
-        DirectorAgent(),
-        AssetAgent(),
-        EngineerAgent(),
-        AssemblerAgent(),
+    stages = [
+        ("Director", DirectorAgent()),
+        ("Architect", ArchitectAgent()),
+        ("Engineer", EngineerAgent()),
+        ("Validator", ValidatorAgent()),
+        ("Assembler", AssemblerAgent()),
     ]
 
     try:
-        for agent in agents:
+        for name, agent in stages:
+            print(f"[Pipeline] [{name}] Starting...")
             state = await agent.run(state)
+            print(f"[Pipeline] [{name}] Complete")
         state.status = "completed"
         _save_meta(state)
     except Exception as exc:
         state.status = "failed"
         state.error = str(exc)
-        print(f"[Pipeline] Failed at {agent.name}: {exc}")
+        print(f"[Pipeline] Failed: {exc}")
 
     games[game_id] = state
     return state
 
 
 async def edit_game(game_id: str, edit_prompt: str) -> GameState:
-    """Edit an existing game by re-running Engineer + Assembler agents."""
+    """Edit an existing game by re-running Engineer -> Validator -> Assembler."""
     if game_id not in games:
         raise ValueError(f"Game {game_id} not found")
 
@@ -71,21 +75,22 @@ async def edit_game(game_id: str, edit_prompt: str) -> GameState:
     if state.status != "completed":
         raise ValueError(f"Game {game_id} is not completed (status: {state.status})")
 
-    # Add the edit instruction to the prompt context
     original_prompt = state.prompt
     state.prompt = f"{original_prompt}\n\nEDIT INSTRUCTIONS: {edit_prompt}"
     state.status = "editing"
     games[game_id] = state
 
+    stages = [
+        ("Engineer", EngineerAgent()),
+        ("Validator", ValidatorAgent()),
+        ("Assembler", AssemblerAgent()),
+    ]
+
     try:
-        # Re-run Engineer with the edit context
-        engineer = EngineerAgent()
-        state = await engineer.run(state)
-
-        # Re-run Assembler
-        assembler = AssemblerAgent()
-        state = await assembler.run(state)
-
+        for name, agent in stages:
+            print(f"[Edit] [{name}] Starting...")
+            state = await agent.run(state)
+            print(f"[Edit] [{name}] Complete")
         state.status = "completed"
         _save_meta(state)
     except Exception as exc:
