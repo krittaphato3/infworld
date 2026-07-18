@@ -7,7 +7,7 @@ from datetime import datetime
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from config import settings
@@ -22,7 +22,14 @@ from models import (
     GenerateResponse,
     GameStatusResponse,
 )
-from pipeline import run_pipeline, games
+from pipeline import (
+    run_pipeline,
+    run_pipeline_director,
+    run_pipeline_architect,
+    run_pipeline_engineer,
+    run_pipeline_assembler,
+    games,
+)
 
 app = FastAPI(title="Infinite Realms", version="0.1.0")
 
@@ -76,6 +83,87 @@ async def generate_game(prompt: GamePrompt) -> GenerateResponse:
         game_id=state.game_id,
         status=state.status,
         message=f"Game '{gdd_title}' generated successfully!",
+    )
+
+
+@app.get("/api/generate-stream")
+async def generate_game_stream(prompt: str):
+    """Stream game generation progress via Server-Sent Events."""
+    import json as _json
+
+    async def event_generator():
+        game_id = str(__import__("uuid").uuid4())[:8]
+        yield f"data: {_json.dumps({'type': 'started', 'game_id': game_id})}\n\n"
+
+        # Stage 1: Director
+        yield f"data: {_json.dumps({'type': 'stage', 'stage': 0, 'name': 'Director', 'message': 'Analyzing your game idea and creating a design document...'})}\n\n"
+        try:
+            state = await run_pipeline_director(game_id, prompt)
+            yield f"data: {_json.dumps({'type': 'stage_complete', 'stage': 0, 'title': state.gdd.title if state.gdd else 'Untitled', 'genre': getattr(state.gdd, 'genre', 'unknown') if state.gdd else 'unknown', 'assets': len(state.assets)})}\n\n"
+        except Exception as e:
+            yield f"data: {_json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            return
+
+        # Stage 2: Architect
+        yield f"data: {_json.dumps({'type': 'stage', 'stage': 1, 'name': 'Architect', 'message': 'Building game skeleton with BootScene and texture generation...'})}\n\n"
+        try:
+            state = await run_pipeline_architect(state)
+            yield f"data: {_json.dumps({'type': 'stage_complete', 'stage': 1, 'skeleton_size': len(state.game_js)})}\n\n"
+        except Exception as e:
+            yield f"data: {_json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            return
+
+        # Stage 3: Engineer
+        yield f"data: {_json.dumps({'type': 'stage', 'stage': 2, 'name': 'Engineer', 'message': 'Implementing game mechanics, player controls, and AI...'})}\n\n"
+        try:
+            state = await run_pipeline_engineer(state)
+            yield f"data: {_json.dumps({'type': 'stage_complete', 'stage': 2, 'code_size': len(state.game_js)})}\n\n"
+        except Exception as e:
+            yield f"data: {_json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            return
+
+        # Stage 4: Assembler
+        yield f"data: {_json.dumps({'type': 'stage', 'stage': 3, 'name': 'Assembler', 'message': 'Bundling HTML and saving game files...'})}\n\n"
+        try:
+            state = await run_pipeline_assembler(state)
+            yield f"data: {_json.dumps({'type': 'stage_complete', 'stage': 3})}\n\n"
+        except Exception as e:
+            yield f"data: {_json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            return
+
+        yield f"data: {_json.dumps({'type': 'completed', 'game_id': state.game_id, 'title': state.gdd.title if state.gdd else 'Untitled'})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@app.get("/api/download/{game_id}")
+async def download_game(game_id: str):
+    """Download the generated game HTML file."""
+    if "/" in game_id or "\\" in game_id or ".." in game_id:
+        raise HTTPException(status_code=400, detail="Invalid game ID")
+
+    html_path = os.path.join(settings.generated_dir, game_id, "index.html")
+
+    real_generated = os.path.realpath(settings.generated_dir)
+    real_game_path = os.path.realpath(html_path)
+    if not real_game_path.startswith(real_generated + os.sep):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if not os.path.exists(html_path):
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    title = "game"
+    meta_path = os.path.join(settings.generated_dir, game_id, "meta.json")
+    if os.path.exists(meta_path):
+        import json as _json
+        with open(meta_path, "r", encoding="utf-8") as f:
+            meta = _json.load(f)
+        title = meta.get("title", "game").lower().replace(" ", "_")
+
+    return FileResponse(
+        html_path,
+        media_type="text/html",
+        filename=f"{title}.html",
     )
 
 

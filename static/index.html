@@ -24,6 +24,7 @@ body { font-family: "Inter", sans-serif; background: #0a0a1a; color: #fff; min-h
 .hero-glow { position: absolute; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(233,69,96,0.15), transparent 70%); top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; }
 .particle { position: absolute; width: 2px; height: 2px; background: #e94560; border-radius: 50%; opacity: 0; animation: float 8s infinite; }
 @keyframes float { 0%{opacity:0;transform:translateY(0)} 10%{opacity:0.6} 90%{opacity:0.6} 100%{opacity:0;transform:translateY(-200px)} }
+@keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
 .gradient-btn { background: linear-gradient(135deg, #e94560, #c23152); border: none; color: white; padding: 16px 40px; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }
 .gradient-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(233,69,96,0.4); }
 .gradient-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -87,18 +88,27 @@ Explore Games
 <!-- Loading Section -->
 <section id="loading-section" class="view-section">
 <div class="flex flex-col items-center justify-center min-h-screen px-4">
-<h2 class="font-heading text-2xl md:text-3xl font-bold mb-8 text-center">BUILDING YOUR GAME</h2>
-<div class="stepper mb-8">
-<div id="step-0" class="step-dot active"></div>
-<div class="h-px w-12 bg-gray-700"></div>
-<div id="step-1" class="step-dot"></div>
-<div class="h-px w-12 bg-gray-700"></div>
-<div id="step-2" class="step-dot"></div>
-<div class="h-px w-12 bg-gray-700"></div>
-<div id="step-3" class="step-dot"></div>
+<h2 class="font-heading text-2xl md:text-3xl font-bold mb-2 text-center">BUILDING YOUR GAME</h2>
+<p class="text-gray-400 text-sm mb-8" id="loading-subtitle">Your game is being crafted by AI agents...</p>
+<div class="w-full max-w-md">
+<div id="stage-0" class="flex items-center gap-3 mb-3 opacity-50">
+  <div class="w-8 h-8 rounded-full border-2 border-gray-600 flex items-center justify-center text-xs font-bold" id="stage-0-dot">1</div>
+  <div><p class="text-sm font-semibold text-gray-400" id="stage-0-name">Director</p><p class="text-xs text-gray-600" id="stage-0-msg">Waiting...</p></div>
 </div>
-<p id="loading-status" class="text-gray-400 text-sm">Analyzing prompt...</p>
-<p class="text-gray-500 text-xs mt-2">Elapsed: <span id="elapsed-time" class="font-mono text-[#e94560]">0:00</span></p>
+<div id="stage-1" class="flex items-center gap-3 mb-3 opacity-50">
+  <div class="w-8 h-8 rounded-full border-2 border-gray-600 flex items-center justify-center text-xs font-bold" id="stage-1-dot">2</div>
+  <div><p class="text-sm font-semibold text-gray-400" id="stage-1-name">Architect</p><p class="text-xs text-gray-600" id="stage-1-msg">Waiting...</p></div>
+</div>
+<div id="stage-2" class="flex items-center gap-3 mb-3 opacity-50">
+  <div class="w-8 h-8 rounded-full border-2 border-gray-600 flex items-center justify-center text-xs font-bold" id="stage-2-dot">3</div>
+  <div><p class="text-sm font-semibold text-gray-400" id="stage-2-name">Engineer</p><p class="text-xs text-gray-600" id="stage-2-msg">Waiting...</p></div>
+</div>
+<div id="stage-3" class="flex items-center gap-3 mb-3 opacity-50">
+  <div class="w-8 h-8 rounded-full border-2 border-gray-600 flex items-center justify-center text-xs font-bold" id="stage-3-dot">4</div>
+  <div><p class="text-sm font-semibold text-gray-400" id="stage-3-name">Assembler</p><p class="text-xs text-gray-600" id="stage-3-msg">Waiting...</p></div>
+</div>
+<p class="text-center text-xs text-gray-500 mt-4">Elapsed: <span id="elapsed-time" class="font-mono text-[#e94560]">0:00</span></p>
+</div>
 </div>
 </section>
 <!-- Result Section -->
@@ -112,6 +122,7 @@ Back
 <div class="flex gap-2">
 <button id="edit-btn" class="secondary-btn text-sm py-2 px-4">Edit Prompt</button>
 <button id="share-btn" class="secondary-btn text-sm py-2 px-4">Share</button>
+<button id="download-btn" class="secondary-btn text-sm py-2 px-4">Download</button>
 </div>
 </header>
 <main class="flex-1 p-4 md:p-8">
@@ -134,6 +145,9 @@ Apply
 </button>
 </div>
 <p class="text-xs text-gray-500 mt-2">Describe what you want to change. The AI will modify the game code.</p>
+<div id="edit-log" class="hidden mt-3 p-3 rounded-lg bg-[#0a0a1a] border border-white/5 max-h-32 overflow-y-auto">
+<p class="text-xs text-gray-500 font-mono" id="edit-log-text"></p>
+</div>
 </div>
 </main>
 </div>
@@ -255,17 +269,6 @@ function showView(name) {
   if (sections[name]) sections[name].classList.add("active");
 }
 
-var steps = ["Analyzing prompt...", "Designing game systems...", "Generating assets...", "Building world..."];
-function setStep(n) {
-  for (var i = 0; i < 4; i++) {
-    var dot = $("step-" + i);
-    dot.className = "step-dot";
-    if (i < n) dot.classList.add("done");
-    else if (i === n) dot.classList.add("active");
-  }
-  $("loading-status").textContent = steps[n] || "Done";
-}
-
 var exploreGames = [];
 var exploreSort = "newest";
 var exploreSearch = "";
@@ -301,6 +304,38 @@ function formatTimeAgo(dateStr) {
 function showExplore() {
   showView("explore");
   loadExploreGames();
+}
+
+function updateStage(idx, state, message) {
+  var el = $("stage-" + idx);
+  var dot = $("stage-" + idx + "-dot");
+  var msg = $("stage-" + idx + "-msg");
+  if (!el) return;
+
+  if (state === "active") {
+    el.style.opacity = "1";
+    dot.className = "w-8 h-8 rounded-full border-2 border-[#e94560] flex items-center justify-center text-xs font-bold text-[#e94560]";
+    dot.style.animation = "spin 1s linear infinite";
+    dot.innerHTML = (idx + 1);
+    msg.textContent = message || "Working...";
+    msg.className = "text-xs text-[#e94560]";
+  } else if (state === "done") {
+    el.style.opacity = "1";
+    dot.className = "w-8 h-8 rounded-full border-2 border-[#00ff88] bg-[#00ff88] flex items-center justify-center text-xs font-bold text-[#0a0a1a]";
+    dot.style.animation = "none";
+    dot.innerHTML = "✓";
+    msg.textContent = message || "Complete";
+    msg.className = "text-xs text-[#00ff88]";
+  }
+}
+
+function appendEditLog(msg) {
+  var logEl = $("edit-log-text");
+  var logContainer = $("edit-log");
+  if (!logEl) return;
+  logContainer.classList.remove("hidden");
+  logEl.textContent += new Date().toLocaleTimeString() + " — " + msg + "\n";
+  logContainer.scrollTop = logContainer.scrollHeight;
 }
 
 function loadExploreGames() {
@@ -368,42 +403,84 @@ function renderExploreGrid() {
 
 function startGeneration() {
   var prompt = $("game-prompt").value.trim();
-  if (!prompt) {
-    $("game-prompt").focus();
-    return;
-  }
+  if (!prompt) { $("game-prompt").focus(); return; }
+
   showView("loading");
-  setStep(0);
+  // Reset stages
+  for (var i = 0; i < 4; i++) {
+    var el = $("stage-" + i);
+    if (el) {
+      el.style.opacity = "0.5";
+      var dot = $("stage-" + i + "-dot");
+      dot.className = "w-8 h-8 rounded-full border-2 border-gray-600 flex items-center justify-center text-xs font-bold";
+      dot.style.animation = "none";
+      dot.innerHTML = (i + 1);
+      $("stage-" + i + "-msg").textContent = "Waiting...";
+      $("stage-" + i + "-msg").className = "text-xs text-gray-600";
+    }
+  }
   startElapsedTimer();
 
-  fetch(API_BASE + "/api/generate-game", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: prompt })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    setStep(4);
+  var evtSource = new EventSource("/api/generate-stream?prompt=" + encodeURIComponent(prompt));
+
+  evtSource.onmessage = function(event) {
+    var data = JSON.parse(event.data);
+
+    if (data.type === "stage") {
+      updateStage(data.stage, "active", data.message);
+    } else if (data.type === "stage_complete") {
+      var extra = "";
+      if (data.title) extra = " — " + data.title;
+      if (data.skeleton_size) extra = " (" + data.skeleton_size + " chars)";
+      if (data.code_size) extra = " (" + data.code_size + " chars)";
+      updateStage(data.stage, "done", "Complete" + extra);
+    } else if (data.type === "completed") {
+      stopElapsedTimer();
+      currentGameId = data.game_id;
+      $("game-iframe").src = API_BASE + "/play/" + data.game_id;
+      var titleEl = $("game-title-display");
+      if (titleEl) titleEl.textContent = data.title || "Your game";
+      setTimeout(function() {
+        showView("result");
+        setTimeout(function() { captureThumbnail(data.game_id); }, 3000);
+        saveVersion(data.game_id, prompt);
+      }, 500);
+      evtSource.close();
+    } else if (data.type === "error") {
+      stopElapsedTimer();
+      evtSource.close();
+      alert("Generation failed: " + data.message);
+      showView("landing");
+    }
+  };
+
+  evtSource.onerror = function() {
     stopElapsedTimer();
-    setTimeout(function() {
-      if (data && data.game_id) {
+    evtSource.close();
+    // Fallback to old POST method
+    fetch(API_BASE + "/api/generate-game", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: prompt })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.game_id) {
         currentGameId = data.game_id;
         $("game-iframe").src = API_BASE + "/play/" + data.game_id;
         showView("result");
         setTimeout(function() { captureThumbnail(data.game_id); }, 3000);
-        saveVersion(data.game_id, $("game-prompt").value.trim());
+        saveVersion(data.game_id, prompt);
       } else {
-        alert(data.detail || "Generation failed. Please try again.");
+        alert(data.detail || "Generation failed");
         showView("landing");
       }
-    }, 500);
-  })
-  .catch(function(err) {
-    stopElapsedTimer();
-    console.error("Generation error:", err);
-    alert("Network error. Check that the server is running.");
-    showView("landing");
-  });
+    })
+    .catch(function(e) {
+      alert("Network error");
+      showView("landing");
+    });
+  };
 }
 
 function openSettings() {
@@ -463,12 +540,29 @@ function editGame() {
   if (!prompt) { editInput.focus(); return; }
   if (!currentGameId) { alert("No game to edit."); return; }
 
+  appendEditLog("Starting game edit...");
+  appendEditLog("Loading existing game code...");
+
   var applyBtn = $("edit-apply-btn");
   applyBtn.disabled = true;
   applyBtn.textContent = "Editing...";
   showView("loading");
-  setStep(0);
+  // Reset stages for edit
+  for (var i = 0; i < 4; i++) {
+    var el = $("stage-" + i);
+    if (el) {
+      el.style.opacity = "0.5";
+      var dot = $("stage-" + i + "-dot");
+      dot.className = "w-8 h-8 rounded-full border-2 border-gray-600 flex items-center justify-center text-xs font-bold";
+      dot.style.animation = "none";
+      dot.innerHTML = (i + 1);
+      $("stage-" + i + "-msg").textContent = "Waiting...";
+      $("stage-" + i + "-msg").className = "text-xs text-gray-600";
+    }
+  }
   startElapsedTimer();
+
+  appendEditLog("Sending edit instructions to AI...");
 
   fetch(API_BASE + "/api/edit-game", {
     method: "POST",
@@ -477,14 +571,17 @@ function editGame() {
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
-    setStep(4);
+    appendEditLog("Game updated successfully!");
     stopElapsedTimer();
     setTimeout(function() {
       if (data && data.game_id) {
         $("game-iframe").src = API_BASE + "/play/" + data.game_id + "?t=" + Date.now();
         showView("result");
         editInput.value = "";
+        $("edit-log").classList.add("hidden");
+        $("edit-log-text").textContent = "";
       } else {
+        appendEditLog("Edit failed: " + (data.detail || "Unknown error"));
         alert(data.detail || "Edit failed.");
         showView("result");
       }
@@ -492,6 +589,7 @@ function editGame() {
   })
   .catch(function(err) {
     stopElapsedTimer();
+    appendEditLog("Edit failed: network error");
     console.error("Edit error:", err);
     alert("Edit failed. Please try again.");
     showView("result");
@@ -648,6 +746,12 @@ function bindEvents() {
       items[cmdActiveIndex].scrollIntoView({ block: "nearest" });
     }
   });
+  $("download-btn").addEventListener("click", function() {
+    if (currentGameId) {
+      window.open(API_BASE + "/api/download/" + currentGameId, "_blank");
+    }
+  });
+
   $("cmd-input").addEventListener("input", function() { renderCmdResults(this.value); });
   $("cmd-palette-overlay").addEventListener("click", function(e) { if (e.target === this) closeCmdPalette(); });
 }

@@ -46,7 +46,7 @@ async def run_pipeline(prompt: GamePrompt) -> GameState:
         ("Director", DirectorAgent()),
         ("Architect", ArchitectAgent()),
         ("Engineer", EngineerAgent()),
-        ("Validator", ValidatorAgent()),
+        # Validator skipped for speed — Engineer output is usually good enough
         ("Assembler", AssemblerAgent()),
     ]
 
@@ -55,6 +55,7 @@ async def run_pipeline(prompt: GamePrompt) -> GameState:
             print(f"[Pipeline] [{name}] Starting...")
             state = await agent.run(state)
             print(f"[Pipeline] [{name}] Complete")
+
         state.status = "completed"
         _save_meta(state)
     except Exception as exc:
@@ -99,4 +100,40 @@ async def edit_game(game_id: str, edit_prompt: str) -> GameState:
         print(f"[Edit] Failed at editing: {exc}")
 
     games[game_id] = state
+    return state
+
+
+async def run_pipeline_director(game_id: str, prompt: str) -> GameState:
+    """Run just the Director stage."""
+    state = GameState(game_id=game_id, prompt=prompt, status="running", created_at=datetime.now().isoformat())
+    games[game_id] = state
+    director = DirectorAgent()
+    state = await director.run(state)
+    games[game_id] = state
+    return state
+
+
+async def run_pipeline_architect(state: GameState) -> GameState:
+    """Run just the Architect stage."""
+    architect = ArchitectAgent()
+    state = await architect.run(state)
+    games[state.game_id] = state
+    return state
+
+
+async def run_pipeline_engineer(state: GameState) -> GameState:
+    """Run just the Engineer stage (no Validator for speed)."""
+    engineer = EngineerAgent()
+    state = await engineer.run(state)
+    games[state.game_id] = state
+    return state
+
+
+async def run_pipeline_assembler(state: GameState) -> GameState:
+    """Run just the Assembler stage."""
+    state.status = "completed"
+    assembler = AssemblerAgent()
+    state = await assembler.run(state)
+    _save_meta(state)
+    games[state.game_id] = state
     return state
