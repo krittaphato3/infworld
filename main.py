@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -167,19 +168,62 @@ async def list_games(
     sort: str = "newest",
     search: str = "",
 ) -> GamesListResponse:
-    """List all generated games with optional sorting and search."""
+    """List all generated games by scanning the filesystem."""
+    import json as _json
+    import re
     game_list = []
-    for gid, state in games.items():
-        title = state.gdd.title if state.gdd else "Untitled"
-        if search and search.lower() not in title.lower() and search.lower() not in state.prompt.lower():
+    generated_dir = settings.generated_dir
+
+    if not os.path.exists(generated_dir):
+        return GamesListResponse(games=[], total=0)
+
+    for game_id in os.listdir(generated_dir):
+        game_dir = os.path.join(generated_dir, game_id)
+        if not os.path.isdir(game_dir):
             continue
+        meta_path = os.path.join(game_dir, "meta.json")
+        html_path = os.path.join(game_dir, "index.html")
+
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r", encoding="utf-8") as f:
+                    meta = _json.load(f)
+                title = meta.get("title", "Untitled")
+                prompt = meta.get("prompt", "")
+                created_at = meta.get("created_at", "")
+                asset_count = meta.get("asset_count", 0)
+                status = meta.get("status", "completed")
+            except Exception:
+                continue
+        elif os.path.exists(html_path):
+            title = "Untitled"
+            try:
+                with open(html_path, "r", encoding="utf-8") as f:
+                    content = f.read(2000)
+                m = re.search(r"<title>(.*?)</title>", content)
+                if m:
+                    title = m.group(1)
+            except Exception:
+                pass
+            mtime = os.path.getmtime(html_path)
+            created_at = datetime.fromtimestamp(mtime).isoformat()
+            prompt, asset_count, status = "", 0, "completed"
+            meta = {"game_id": game_id, "prompt": prompt, "title": title,
+                    "status": status, "created_at": created_at, "asset_count": asset_count}
+            try:
+                with open(meta_path, "w", encoding="utf-8") as f:
+                    _json.dump(meta, f)
+            except Exception:
+                pass
+        else:
+            continue
+
+        if search and search.lower() not in title.lower() and search.lower() not in prompt.lower():
+            continue
+
         game_list.append(GameSummary(
-            game_id=state.game_id,
-            title=title,
-            prompt=state.prompt[:200],
-            status=state.status,
-            created_at=state.created_at,
-            asset_count=len(state.assets),
+            game_id=game_id, title=title, prompt=prompt[:200],
+            status=status, created_at=created_at, asset_count=asset_count,
         ))
 
     if sort == "oldest":

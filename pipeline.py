@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import os
 import uuid
 from datetime import datetime
 
@@ -10,9 +12,27 @@ from agents.director import DirectorAgent
 from agents.asset import AssetAgent
 from agents.engineer import EngineerAgent
 from agents.assembler import AssemblerAgent
+from config import settings
 
 # In-memory store for game states (prototype only)
 games: dict[str, GameState] = {}
+
+
+def _save_meta(state: GameState) -> None:
+    """Persist game metadata to disk so it survives server restarts."""
+    meta = {
+        "game_id": state.game_id,
+        "prompt": state.prompt,
+        "title": state.gdd.title if state.gdd else "Untitled",
+        "status": state.status,
+        "created_at": state.created_at,
+        "asset_count": len(state.assets),
+    }
+    game_dir = os.path.join(settings.generated_dir, state.game_id)
+    os.makedirs(game_dir, exist_ok=True)
+    meta_path = os.path.join(game_dir, "meta.json")
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2)
 
 
 async def run_pipeline(prompt: GamePrompt) -> GameState:
@@ -32,6 +52,7 @@ async def run_pipeline(prompt: GamePrompt) -> GameState:
         for agent in agents:
             state = await agent.run(state)
         state.status = "completed"
+        _save_meta(state)
     except Exception as exc:
         state.status = "failed"
         state.error = str(exc)
@@ -66,6 +87,7 @@ async def edit_game(game_id: str, edit_prompt: str) -> GameState:
         state = await assembler.run(state)
 
         state.status = "completed"
+        _save_meta(state)
     except Exception as exc:
         state.status = "failed"
         state.error = str(exc)
