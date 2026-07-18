@@ -25,3 +25,4 @@ gen*.js
 *.swp
 .playwright-mcp/
 LibraryProjectProjectInfWorldstatic*
+node_modules/

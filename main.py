@@ -51,13 +51,25 @@ app.mount(
     name="generated",
 )
 
-# Serve the frontend
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Serve the React frontend build
+dist_dir = os.path.join(os.path.dirname(__file__), "static", "dist")
+if os.path.exists(dist_dir):
+    app.mount("/assets", StaticFiles(directory=os.path.join(dist_dir, "assets")), name="assets")
 
 
 @app.get("/", response_class=HTMLResponse)
 async def root() -> HTMLResponse:
-    """Serve the single-page frontend."""
+    """Serve the React frontend."""
+    index_path = os.path.join(dist_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    # Fallback to old static frontend
+    return FileResponse("static/index.html")
+
+
+@app.get("/old", response_class=HTMLResponse)
+async def old_ui() -> HTMLResponse:
+    """Serve the legacy static frontend."""
     return FileResponse("static/index.html")
 
 
@@ -393,6 +405,93 @@ async def play_game(game_id: str) -> HTMLResponse:
     if not os.path.exists(game_path):
         raise HTTPException(status_code=404, detail="Game not found or still generating")
     return FileResponse(game_path, media_type="text/html")
+
+
+@app.get("/api/files/{game_id}")
+async def list_game_files(game_id: str):
+    """List all files in a generated game directory."""
+    # Path traversal protection
+    if "/" in game_id or "\\" in game_id or ".." in game_id:
+        raise HTTPException(status_code=400, detail="Invalid game ID")
+    game_dir = os.path.join(settings.generated_dir, game_id)
+
+    real_generated = os.path.realpath(settings.generated_dir)
+    real_game_dir = os.path.realpath(game_dir)
+    if not real_game_dir.startswith(real_generated + os.sep):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if not os.path.exists(game_dir):
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    files = []
+    for root, dirs, filenames in os.walk(game_dir):
+        for fname in filenames:
+            fpath = os.path.join(root, fname)
+            rel_path = os.path.relpath(fpath, game_dir)
+            size = os.path.getsize(fpath)
+            files.append({
+                "path": rel_path,
+                "name": fname,
+                "size": size,
+                "type": "file",
+            })
+
+    return {"game_id": game_id, "files": files}
+
+
+@app.get("/api/files/{game_id}/{file_path:path}")
+async def get_file_content(game_id: str, file_path: str):
+    """Get the content of a specific file in a game directory."""
+    # Path traversal protection
+    if ".." in game_id or ".." in file_path:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    game_dir = os.path.join(settings.generated_dir, game_id)
+    real_generated = os.path.realpath(settings.generated_dir)
+    real_game_dir = os.path.realpath(game_dir)
+    if not real_game_dir.startswith(real_generated + os.sep):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    full_path = os.path.join(game_dir, file_path)
+    real_full = os.path.realpath(full_path)
+    if not real_full.startswith(real_generated + os.sep):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    ext = os.path.splitext(file_path)[1].lower()
+    content_types = {
+        ".html": "text/html",
+        ".js": "text/javascript",
+        ".css": "text/css",
+        ".json": "application/json",
+        ".md": "text/markdown",
+        ".txt": "text/plain",
+    }
+
+    try:
+        with open(full_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except UnicodeDecodeError:
+        import base64
+        with open(full_path, "rb") as f:
+            content = base64.b64encode(f.read()).decode()
+        return {"path": file_path, "content": content, "encoding": "base64", "mime": content_types.get(ext, "application/octet-stream")}
+
+    return {"path": file_path, "content": content, "encoding": "utf-8", "mime": content_types.get(ext, "text/plain"), "size": os.path.getsize(full_path)}
+
+
+@app.get("/api/game/{game_id}/meta")
+async def get_game_meta(game_id: str):
+    """Get metadata for a specific game."""
+    import json as _json
+    meta_path = os.path.join(settings.generated_dir, game_id, "meta.json")
+    if not os.path.exists(meta_path):
+        raise HTTPException(status_code=404, detail="Game not found")
+    with open(meta_path, "r", encoding="utf-8") as f:
+        meta = _json.load(f)
+    return meta
 
 
 if __name__ == "__main__":
